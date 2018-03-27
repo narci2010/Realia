@@ -42,6 +42,9 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	if (m_bIsLButtonDown) {
 		DrawRuler(hDcMem, m_ptBegin, m_ptEnd);
 	}
+	POINT pt1 = { 100, 300 };
+	POINT pt2 = { 500, 300 };
+	DrawProtractor(hDcMem, pt1, pt2);
 
 	//双缓冲技术
 	BitBlt(pDc, 0, 0, m_lWndWidth, m_lWndHeight, hDcMem, 0, 0, SRCCOPY);
@@ -157,6 +160,75 @@ void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2)
 			LineTo(dc, pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
 		}
 	}
+
+	SelectObject(dc, oldfont);
+	::DeleteObject(oldfont);
+	::DeleteObject(hFont);
+	SelectObject(dc, oldbrush);
+	::DeleteObject(hbrush);
+	::DeleteObject(oldbrush);
+	SelectObject(dc, oldpen);
+	::DeleteObject(pen);
+	::DeleteObject(oldpen);
+}
+
+void CRealiaWnd::DrawProtractor(HDC dc, POINT pt1, POINT pt2)
+{
+	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+
+	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
+
+	double r = (pt2.x - pt1.x) / 2;
+	//Ellipse(dc, pt1.x, pt1.y - r, pt2.x, pt2.y + r);
+	//Arc函数从起点至终点逆时针画弧
+	//Arc(dc, pt1.x, pt1.y - r, pt2.x, pt2.y + r, pt1.x, pt1.y, pt2.x, pt2.y);//下半圆
+	Arc(dc, pt1.x, pt1.y - r, pt2.x, pt2.y + r, pt2.x, pt2.y, pt1.x, pt1.y);//上半圆
+	//Arc(dc, pt1.x, pt1.y - r, pt2.x, pt2.y + r, pt1.x, pt1.y, pt1.x, pt1.y);//整个圆
+	//Arc(dc, pt1.x, pt1.y - r, pt2.x, pt2.y + r, pt1.x, pt1.y, pt1.x + r, pt1.y + r);
+	//Arc(dc, pt1.x, pt1.y - 100, pt2.x, pt2.y + 100, pt1.x, pt1.y, pt1.x, pt1.y);//椭圆
+
+	pen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+	SelectObject(dc, pen);
+
+	//12号微软雅黑字体
+	HFONT hFont = CreateFont(
+		-12,                       // nHeight  
+		0,                         // nWidth  
+		0,                         // nEscapement  
+		0,                         // nOrientation  
+		FW_NORMAL,                 // nWeight  
+		FALSE,                     // bItalic  
+		FALSE,                     // bUnderline  
+		0,                         // cStrikeOut  
+		ANSI_CHARSET,              // nCharSet  
+		OUT_DEFAULT_PRECIS,        // nOutPrecision  
+		CLIP_DEFAULT_PRECIS,       // nClipPrecision  
+		DEFAULT_QUALITY,           // nQuality  
+		DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily  
+		_T("微软雅黑"));           // lpszFacename 
+	SetTextColor(dc, RGB(0, 0, 255));
+	HFONT oldfont = (HFONT)SelectObject(dc, hFont);
+
+	//int count = pl / 5;
+	//int j = 0;
+	//for (int i = 0; i < count; i++) {
+	//	j = i + 1;//为了下面的计算少写一个括号
+	//	MoveToEx(dc, pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta), NULL);
+	//	if (i % 10 == 0) {
+	//		LineTo(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
+	//		TCHAR mark[8];
+	//		wsprintf(mark, _T("%d"), i / 10);
+	//		TextOut(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta) - 3, pt1.y + 5 * j * sin(theta) + 25 * cos(theta) + 2, mark, lstrlen(mark));
+	//	}
+	//	else if (i % 5 == 0) {
+	//		LineTo(dc, pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
+	//	}
+	//	else {
+	//		LineTo(dc, pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
+	//	}
+	//}
 
 	SelectObject(dc, oldfont);
 	::DeleteObject(oldfont);

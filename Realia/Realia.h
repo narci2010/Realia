@@ -28,4 +28,5 @@ private:
 	//»­±³¾°
 	void DrawBackground(HDC dc, RECT rc);
 	void DrawRuler(HDC dc, POINT pt1, POINT pt2);
+	void DrawProtractor(HDC dc, POINT pt1, POINT pt2);
 };
