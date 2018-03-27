@@ -3,7 +3,13 @@
 
 CRealiaWnd::CRealiaWnd()
 {
+	::ZeroMemory(&m_rcWindow, sizeof(m_rcWindow));
+	m_lWndWidth = 0;
+	m_lWndHeight = 0;
 
+	m_bIsLButtonDown = false;
+	m_ptBegin.x = m_ptBegin.y = 0;
+	m_ptEnd.x = m_ptEnd.y = 0;
 }
 
 CRealiaWnd::~CRealiaWnd()
@@ -15,7 +21,7 @@ void CRealiaWnd::InitWindow(HWND hWnd)
 {
 	m_hWnd = hWnd;
 
-	GetWindowRect(m_hWnd, &m_rcWindow);
+	//GetWindowRect(m_hWnd, &m_rcWindow);
 	GetClientRect(m_hWnd, &m_rcWindow);
 	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
 	m_lWndHeight = m_rcWindow.bottom - m_rcWindow.top;
@@ -33,9 +39,9 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	DrawBackground(hDcMem, m_rcWindow);
 
 	//画直尺
-	POINT pt1 = { m_rcWindow.left + 100, m_rcWindow.top + 100 };
-	POINT pt2 = { m_rcWindow.left + 300, m_rcWindow.top + 400 };
-	DrawRuler(hDcMem, pt1, pt2);
+	if (m_bIsLButtonDown) {
+		DrawRuler(hDcMem, m_ptBegin, m_ptEnd);
+	}
 
 	//双缓冲技术
 	BitBlt(pDc, 0, 0, m_lWndWidth, m_lWndHeight, hDcMem, 0, 0, SRCCOPY);
@@ -44,6 +50,24 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	DeleteDC(hDcMem);
 	DeleteObject(hBmpMem);
 	DeleteObject(hBmpOld);
+}
+
+void CRealiaWnd::OnLButtonDown(POINT pt)
+{
+	m_ptBegin = pt;
+	m_bIsLButtonDown = true;
+}
+void CRealiaWnd::OnLButtonUp(POINT pt)
+{
+	m_bIsLButtonDown = false;
+}
+void CRealiaWnd::OnMouseMove(POINT pt)
+{
+	if (m_bIsLButtonDown) {
+		m_ptEnd = pt;
+		InvalidateRect(m_hWnd, NULL, false);
+		UpdateWindow(m_hWnd);
+	}
 }
 
 void CRealiaWnd::DrawBackground(HDC dc, RECT rc)
@@ -58,9 +82,19 @@ void CRealiaWnd::DrawBackground(HDC dc, RECT rc)
 	::DeleteObject(oldhbrush);
 }
 
-//画直尺：5像素为1毫米,固定直尺宽度60像素
+//画直尺：5像素为1毫米，固定直尺总宽度为60像素
+//普通刻度10像素长，5的倍数20像素长，10的倍数25像素长
 void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2)
 {
+	if (pt1.x > pt2.x) {
+		LONG tmp = pt1.x;
+		pt1.x = pt2.x;
+		pt2.x = tmp;
+		tmp = pt1.y;
+		pt1.y = pt2.y;
+		pt2.y = tmp;
+	}
+
 	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 	HPEN oldpen = (HPEN)SelectObject(dc, pen);
 
@@ -105,22 +139,23 @@ void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2)
 	SetTextColor(dc, RGB(0, 0, 255));
 	HFONT oldfont = (HFONT)SelectObject(dc, hFont);
 
-	int count = 0;
-	for (int i = pt1.x + 5; i < pt2.x; i += 5) {
-		MoveToEx(dc, i, pt1.y, NULL);
-		if (count % 10 == 0) {
-			LineTo(dc, i, pt1.y + 25);
+	int count = pl / 5;
+	int j = 0;
+	for (int i = 0; i < count; i++) {
+		j = i + 1;//为了下面的计算少写一个括号
+		MoveToEx(dc, pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta), NULL);
+		if (i % 10 == 0) {
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
 			TCHAR mark[8];
-			wsprintf(mark, _T("%d"), count / 10);
-			TextOut(dc, i - 3, pt1.y + 27, mark, lstrlen(mark));
+			wsprintf(mark, _T("%d"), i / 10);
+			TextOut(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta) - 3, pt1.y + 5 * j * sin(theta) + 25 * cos(theta) + 2, mark, lstrlen(mark));
 		}
-		else if (count % 5 == 0) {
-			LineTo(dc, i, pt1.y + 20);
+		else if (i % 5 == 0) {
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
 		}
 		else {
-			LineTo(dc, i, pt1.y + 10);
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
 		}
-		count++;
 	}
 
 	SelectObject(dc, oldfont);

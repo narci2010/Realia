@@ -110,6 +110,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		EndPaint(hWnd, &ps);
 		break;
+	case WM_LBUTTONDOWN:
+		point.x = LOWORD(lParam);
+		point.y = HIWORD(lParam);
+		m_CRealiaWnd.OnLButtonDown(point);
+		break;
+	case WM_LBUTTONUP:
+		point.x = LOWORD(lParam);
+		point.y = HIWORD(lParam);
+		m_CRealiaWnd.OnLButtonUp(point);
+		break;
+	case WM_MOUSEMOVE:
+		point.x = LOWORD(lParam);
+		point.y = HIWORD(lParam);
+		m_CRealiaWnd.OnMouseMove(point);
+		break;
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE)
 		{
