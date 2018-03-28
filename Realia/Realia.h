@@ -25,8 +25,10 @@ private:
 	POINT m_ptBegin;
 	POINT m_ptEnd;
 
+	int m_iRealiaType;//教具类型
+
 	//画背景
 	void DrawBackground(HDC dc, RECT rc);
-	void DrawRuler(HDC dc, POINT pt1, POINT pt2);
+	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50);
 	void DrawProtractor(HDC dc, POINT pt1, POINT pt2);
 };
