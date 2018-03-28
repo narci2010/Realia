@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
+#include "RectTracker.h"
 
 class CRealiaWnd
 {
@@ -13,6 +14,7 @@ public:
 	void OnLButtonDown(POINT pt);
 	void OnLButtonUp(POINT pt);
 	void OnMouseMove(POINT pt);
+	BOOL OnSetCursor(HWND pWnd, UINT nHitTest);
 
 private:
 	HWND m_hWnd;
@@ -24,6 +26,8 @@ private:
 	BOOL m_bIsLButtonDown;
 	POINT m_ptBegin;
 	POINT m_ptEnd;
+
+	CRectTracker m_RectTracker;
 
 	int m_iRealiaType;//教具类型
 

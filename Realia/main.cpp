@@ -85,6 +85,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc;
 	POINT point;
+	UINT nHitTest;
 	switch (uMsg)
 	{
 	case WM_COMMAND:
@@ -125,6 +126,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		point.y = HIWORD(lParam);
 		m_CRealiaWnd.OnMouseMove(point);
 		break;
+	case WM_SETCURSOR:
+		nHitTest = LOWORD(lParam);
+		m_CRealiaWnd.OnSetCursor(hWnd, nHitTest);
+		break;
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE)
 		{
@@ -133,10 +138,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_DESTROY:
-	{
 		PostQuitMessage(0);
 		return 0;
-	}
 	}
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }

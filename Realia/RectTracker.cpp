@@ -38,7 +38,6 @@ void AFX_CDECL AfxWingdixTerm()
 }
 char _afxWingdixTerm = 0;
 
-
 // the struct below is used to determine the qualities of a particular handle
 struct AFX_HANDLEINFO
 {
@@ -88,9 +87,16 @@ AFX_STATIC_DATA const AFX_RECTINFO _afxRectInfo[] =
 /////////////////////////////////////////////////////////////////////////////
 // CRectTracker intitialization
 
+CRectTracker::CRectTracker()
+{
+	//assert(AfxIsValidAddress(lpSrcRect, sizeof(RECT), FALSE));
+
+	Construct();
+}
+
 CRectTracker::CRectTracker(LPCRECT lpSrcRect, UINT nStyle)
 {
-	assert(AfxIsValidAddress(lpSrcRect, sizeof(RECT), FALSE));
+	//assert(AfxIsValidAddress(lpSrcRect, sizeof(RECT), FALSE));
 
 	Construct();
 	m_rect.CopyRect(lpSrcRect);
@@ -209,7 +215,7 @@ void CRectTracker::Draw(HDC pDC) const
 
 	HPEN pOldPen = NULL;
 	HBRUSH pOldBrush = NULL;
-	HBRUSH pTemp;
+	HGDIOBJ pTemp;
 	int nOldROP;
 
 	// draw lines
@@ -233,10 +239,10 @@ void CRectTracker::Draw(HDC pDC) const
 	// hatch inside
 	if ((m_nStyle & hatchInside) != 0)
 	{
-		pTemp = (HBRUSH)SelectObject(pDC, GetStockObject(NULL_PEN));
+		pTemp = SelectObject(pDC, GetStockObject(NULL_PEN));
 		if (pOldPen == NULL)
 			pOldPen = (HPEN)pTemp;
-		pTemp = (HBRUSH)SelectObject(pDC, _afxHatchBrush);
+		pTemp = SelectObject(pDC, _afxHatchBrush);
 		if (pOldBrush == NULL)
 			pOldBrush = (HBRUSH)pTemp;
 		SetBkMode(pDC, TRANSPARENT);
@@ -248,7 +254,7 @@ void CRectTracker::Draw(HDC pDC) const
 	// draw hatched border
 	if ((m_nStyle & hatchedBorder) != 0)
 	{
-		pTemp = (HBRUSH)SelectObject(pDC, _afxHatchBrush);
+		pTemp = SelectObject(pDC, _afxHatchBrush);
 		if (pOldBrush == NULL)
 			pOldBrush = (HBRUSH)pTemp;
 		SetBkMode(pDC, OPAQUE);
@@ -780,17 +786,14 @@ HBRUSH PASCAL GetHalftoneBrush()
 	if (!_afxWingdixTerm)
 		_afxWingdixTerm = (char)!atexit(&AfxWingdixTerm);
 	//AfxUnlockGlobals(CRIT_HALFTONEBRUSH);
-
 	return _afxHalftoneBrush;
 }
-
 void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 	LPCRECT lpRectLast, SIZE sizeLast, HBRUSH pBrush, HBRUSH pBrushLast)
 {
 	//ASSERT(AfxIsValidAddress(lpRect, sizeof(RECT), FALSE));
 	//ASSERT(lpRectLast == NULL ||
 	//	AfxIsValidAddress(lpRectLast, sizeof(RECT), FALSE));
-
 	// first, determine the update region and select it
 	HRGN rgnNew;
 	HRGN rgnOutside, rgnInside;
@@ -801,20 +804,16 @@ void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 	rgnInside = CreateRectRgnIndirect(rect);
 	rgnNew = CreateRectRgn(0, 0, 0, 0);
 	CombineRgn(rgnNew, rgnOutside, rgnInside, RGN_XOR);
-
 	HBRUSH pBrushOld = NULL;
 	if (pBrush == NULL)
 	{
 		pBrush = GetHalftoneBrush();
 	}
-
 	//ENSURE(pBrush);
-
 	if (pBrushLast == NULL)
 	{
 		pBrushLast = pBrush;
 	}
-
 	HRGN rgnLast, rgnUpdate;
 	if (lpRectLast != NULL)
 	{
@@ -826,7 +825,6 @@ void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 		rect.IntersectRect(rect, lpRectLast);
 		SetRectRgn(rgnInside, rect.left, rect.top, rect.right, rect.bottom);
 		CombineRgn(rgnLast, rgnOutside, rgnInside, RGN_XOR);
-
 		// only diff them if brushes are the same
 		if (pBrush->m_hObject == pBrushLast->m_hObject)
 		{
@@ -844,16 +842,13 @@ void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 		SelectObject(pBrushOld);
 		pBrushOld = NULL;
 	}
-
 	// draw into the update/new region
 	SelectClipRgn(rgnUpdate.m_hObject != NULL ? &rgnUpdate : &rgnNew);
 	GetClipBox(&rect);
 	pBrushOld = SelectObject(pBrush);
 	PatBlt(rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
-
 	// cleanup DC
 	if (pBrushOld != NULL)
 		SelectObject(pBrushOld);
 	SelectClipRgn(NULL);
-}
-*/
+}*/

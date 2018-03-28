@@ -3,23 +3,41 @@
 #include "stdafx.h"
 #include "atltypes.h"
 
+
 //CRectTracker使用的MFC宏定义
-// AFX_CDECL is used for rare functions taking variable arguments
-#ifndef AFX_CDECL
-#define AFX_CDECL __cdecl
+
+// AFXAPI is used on global public functions
+#ifndef AFXAPI
+#define AFXAPI __stdcall
 #endif
+
 #ifndef AFX_STATIC
 #define AFX_STATIC extern
 #define AFX_STATIC_DATA extern __declspec(selectany)
 #endif
 
-BOOL AfxIsValidAddress(const void* lp, UINT nBytes,
-	BOOL bReadWrite /* = TRUE */)
-{
-	// simple version using Win-32 APIs for pointer validation.
-	return (lp != NULL && !IsBadReadPtr(lp, nBytes) &&
-		(!bReadWrite || !IsBadWritePtr((LPVOID)lp, nBytes)));
-}
+// AFX_CDECL is used for rare functions taking variable arguments
+#ifndef AFX_CDECL
+#define AFX_CDECL __cdecl
+#endif
+
+//void AFXAPI AfxDeleteObject(HGDIOBJ* pObject)
+//{
+//	//ENSURE_ARG(pObject != NULL);
+//	if (*pObject != NULL)
+//	{
+//		DeleteObject(*pObject);
+//		*pObject = NULL;
+//	}
+//}
+//
+//BOOL AFXAPI AfxIsValidAddress(const void* lp, UINT nBytes,
+//	BOOL bReadWrite = TRUE)
+//{
+//	// simple version using Win-32 APIs for pointer validation.
+//	return (lp != NULL && !IsBadReadPtr(lp, nBytes) &&
+//		(!bReadWrite || !IsBadWritePtr((LPVOID)lp, nBytes)));
+//}
 
 #define CRIT_RECTTRACKER    5
 // MFC Control bar compatibility
@@ -33,31 +51,6 @@ BOOL AfxIsValidAddress(const void* lp, UINT nBytes,
 #define GET_Y_LPARAM(lp)                        ((int)(short)HIWORD(lp))
 #endif
 
-#ifndef __AFX_H__
-#if defined _DEBUG
-#include <crtdbg.h>
-
-BOOL AfxAssertFailedLine(LPCSTR lpszFileName, int nLine)
-{
-	// we remove WM_QUIT because if it is in the queue then the message box
-	// won't display
-	MSG msg;
-	BOOL bQuit = PeekMessage(&msg, NULL, WM_QUIT, WM_QUIT, PM_REMOVE);
-	BOOL bResult = _CrtDbgReport(_CRT_ASSERT, lpszFileName, nLine, NULL, NULL);
-	if (bQuit)
-		PostQuitMessage((int)msg.wParam);
-	return bResult;
-}
-
-#define ASSERT(f)          DEBUG_ONLY((void) ((f) || !::AfxAssertFailedLine(THIS_FILE, __LINE__) || (AfxDebugBreak(), 0)))
-#define VERIFY(f)          ASSERT(f)
-
-#else
-
-#define VERIFY(f)          ((void)(f))
-
-#endif
-#endif
 
 class CRectTracker
 {

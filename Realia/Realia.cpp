@@ -25,6 +25,9 @@ void CRealiaWnd::InitWindow(HWND hWnd)
 	GetClientRect(m_hWnd, &m_rcWindow);
 	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
 	m_lWndHeight = m_rcWindow.bottom - m_rcWindow.top;
+
+	m_RectTracker.m_rect.SetRect(100, 100, 500, 500);
+	m_RectTracker.m_nStyle = CRectTracker::solidLine | CRectTracker::resizeInside;
 }
 
 void CRealiaWnd::OnPaint(HDC pDc)
@@ -38,10 +41,13 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	//ªÊ÷∆±≥æ∞
 	DrawBackground(hDcMem, m_rcWindow);
 
+	//œ∆§ΩÓ¿‡ª≠Õº
+	m_RectTracker.Draw(hDcMem);
+
 	//ª≠÷±≥ﬂ
 	if (m_bIsLButtonDown) {
 		//DrawRuler(hDcMem, m_ptBegin, m_ptEnd);
-		DrawProtractor(hDcMem, m_ptBegin, m_ptEnd);
+		//DrawProtractor(hDcMem, m_ptBegin, m_ptEnd);
 	}
 	//POINT pt1 = { 100, 400 };
 	//POINT pt2 = { 500, 300 };
@@ -58,20 +64,30 @@ void CRealiaWnd::OnPaint(HDC pDc)
 
 void CRealiaWnd::OnLButtonDown(POINT pt)
 {
-	m_ptBegin = pt;
-	m_bIsLButtonDown = true;
+
 }
+
 void CRealiaWnd::OnLButtonUp(POINT pt)
 {
-	m_bIsLButtonDown = false;
+
 }
+
 void CRealiaWnd::OnMouseMove(POINT pt)
 {
-	if (m_bIsLButtonDown) {
-		m_ptEnd = pt;
-		InvalidateRect(m_hWnd, NULL, false);
-		UpdateWindow(m_hWnd);
+
+}
+
+BOOL CRealiaWnd::OnSetCursor(HWND pWnd, UINT nHitTest)
+{
+	if (!m_RectTracker.m_rect.IsRectNull())
+	{
+		if (m_RectTracker.SetCursor(m_hWnd, nHitTest))
+		{
+			return FALSE;
+		}
 	}
+	SetCursor(LoadCursor(NULL, IDC_ARROW));
+	return true;
 }
 
 void CRealiaWnd::DrawBackground(HDC dc, RECT rc)
