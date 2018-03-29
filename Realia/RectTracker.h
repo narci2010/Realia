@@ -91,8 +91,8 @@ public:
 	int NormalizeHit(int nHandle) const;
 
 	// Overridables
-	//virtual void DrawTrackerRect(LPCRECT lpRect, HWND pWndClipTo,
-	//	HDC pDC, HWND pWnd);
+	virtual void DrawTrackerRect(LPCRECT lpRect, HWND pWndClipTo,
+		HDC pDC, HWND pWnd);
 	virtual void AdjustRect(int nHandle, LPRECT lpRect);
 	virtual void OnChangedRect(const CRect& rectOld);
 	virtual UINT GetHandleMask() const;

@@ -14,6 +14,10 @@
 
 #define new DEBUG_NEW
 
+void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
+	LPCRECT lpRectLast, SIZE sizeLast,
+	HBRUSH pBrush = NULL, HBRUSH pBrushLast = NULL);
+
 /////////////////////////////////////////////////////////////////////////////
 // CRectTracker global state
 
@@ -384,7 +388,7 @@ BOOL CRectTracker::TrackRubberBand(HWND pWnd, CPoint point, BOOL bAllowInvert)
 	m_rect.SetRect(point.x, point.y, point.x, point.y);
 	return TrackHandle(hitBottomRight, pWnd, point, NULL);
 }
-/*
+
 void CRectTracker::DrawTrackerRect(
 	LPCRECT lpRect, HWND pWndClipTo, HDC pDC, HWND pWnd)
 {
@@ -395,8 +399,25 @@ void CRectTracker::DrawTrackerRect(
 	// convert to client coordinates
 	if (pWndClipTo != NULL)
 	{
-		ClientToScreen(pWnd, &rect);
-		ScreenToClient(pWndClipTo, &rect);
+		POINT pt;
+		//ClientToScreen(pWnd, &rect);
+		pt = { rect.left, rect.top };
+		ClientToScreen(pWnd, &pt);
+		rect.left = pt.x;
+		rect.top = pt.y;
+		pt = { rect.right, rect.bottom };
+		ClientToScreen(pWnd, &pt);
+		rect.right = pt.x;
+		rect.bottom = pt.y;
+		//ScreenToClient(pWndClipTo, &rect);
+		pt = { rect.left, rect.top };
+		ClientToScreen(pWndClipTo, &pt);
+		rect.left = pt.x;
+		rect.top = pt.y;
+		pt = { rect.right, rect.bottom };
+		ClientToScreen(pWndClipTo, &pt);
+		rect.right = pt.x;
+		rect.bottom = pt.y;
 	}
 
 	CSize size(0, 0);
@@ -422,7 +443,7 @@ void CRectTracker::DrawTrackerRect(
 	// remember last rectangles
 	m_rectLast = rect;
 	m_sizeLast = size;
-}*/
+}
 
 void CRectTracker::AdjustRect(int nHandle, LPRECT)
 {
@@ -656,8 +677,8 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 			{
 				if (bMoved)
 				{
-					//m_bErase = TRUE;
-					//DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
+					m_bErase = TRUE;
+					DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
 				}
 				OnChangedRect(rectOld);
 				if (msg.message != WM_LBUTTONUP)
@@ -668,9 +689,10 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 
 			if (!rectOld.EqualRect(&m_rect))
 			{
-				//m_bErase = FALSE;
-				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				m_bErase = FALSE;
+				DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
 			}
+			InvalidateRect(pWnd, NULL, false);
 			break;
 
 			// handle cancel messages
@@ -680,8 +702,8 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 		case WM_RBUTTONDOWN:
 			if (bMoved)
 			{
-				//m_bErase = m_bFinalErase = TRUE;
-				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				m_bErase = m_bFinalErase = TRUE;
+				DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
 			}
 			m_rect = rectSave;
 			goto ExitLoop;
@@ -767,7 +789,7 @@ UINT CRectTracker::GetHandleMask() const
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/*
+
 HBRUSH PASCAL GetHalftoneBrush()
 {
 	//AfxLockGlobals(CRIT_HALFTONEBRUSH);
@@ -788,7 +810,7 @@ HBRUSH PASCAL GetHalftoneBrush()
 	//AfxUnlockGlobals(CRIT_HALFTONEBRUSH);
 	return _afxHalftoneBrush;
 }
-void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
+inline void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 	LPCRECT lpRectLast, SIZE sizeLast, HBRUSH pBrush, HBRUSH pBrushLast)
 {
 	//ASSERT(AfxIsValidAddress(lpRect, sizeof(RECT), FALSE));
@@ -809,16 +831,18 @@ void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 	{
 		pBrush = GetHalftoneBrush();
 	}
-	//ENSURE(pBrush);
+	assert(pBrush);
 	if (pBrushLast == NULL)
 	{
 		pBrushLast = pBrush;
 	}
 	HRGN rgnLast, rgnUpdate;
+	rgnLast = CreateRectRgn(0, 0, 0, 0);
+	rgnUpdate = CreateRectRgn(0, 0, 0, 0);
 	if (lpRectLast != NULL)
 	{
 		// find difference between new region and old region
-		rgnLast = CreateRectRgn(0, 0, 0, 0);
+		//rgnLast = CreateRectRgn(0, 0, 0, 0);
 		SetRectRgn(rgnOutside, lpRectLast->left, lpRectLast->top, lpRectLast->right, lpRectLast->bottom);
 		rect = *lpRectLast;
 		rect.InflateRect(-sizeLast.cx, -sizeLast.cy);
@@ -826,29 +850,29 @@ void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
 		SetRectRgn(rgnInside, rect.left, rect.top, rect.right, rect.bottom);
 		CombineRgn(rgnLast, rgnOutside, rgnInside, RGN_XOR);
 		// only diff them if brushes are the same
-		if (pBrush->m_hObject == pBrushLast->m_hObject)
+		if (pBrush == pBrushLast)
 		{
-			rgnUpdate.CreateRectRgn(0, 0, 0, 0);
-			rgnUpdate.CombineRgn(&rgnLast, &rgnNew, RGN_XOR);
+			//rgnUpdate = CreateRectRgn(0, 0, 0, 0);
+			CombineRgn(rgnUpdate, rgnLast, rgnNew, RGN_XOR);
 		}
 	}
-	if (pBrush->m_hObject != pBrushLast->m_hObject && lpRectLast != NULL)
+	if (pBrush != pBrushLast && lpRectLast != NULL)
 	{
 		// brushes are different -- erase old region first
-		SelectClipRgn(&rgnLast);
-		GetClipBox(&rect);
-		pBrushOld = SelectObject(pBrushLast);
-		PatBlt(rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
-		SelectObject(pBrushOld);
+		SelectClipRgn(pDC, rgnLast);
+		GetClipBox(pDC, &rect);
+		pBrushOld = (HBRUSH)SelectObject(pDC, pBrushLast);
+		PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
+		SelectObject(pDC, pBrushOld);
 		pBrushOld = NULL;
 	}
 	// draw into the update/new region
-	SelectClipRgn(rgnUpdate.m_hObject != NULL ? &rgnUpdate : &rgnNew);
-	GetClipBox(&rect);
-	pBrushOld = SelectObject(pBrush);
-	PatBlt(rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
+	SelectClipRgn(pDC, rgnUpdate != NULL ? rgnUpdate : rgnNew);
+	GetClipBox(pDC, &rect);
+	pBrushOld = (HBRUSH)SelectObject(pDC, pBrush);
+	PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
 	// cleanup DC
 	if (pBrushOld != NULL)
-		SelectObject(pBrushOld);
-	SelectClipRgn(NULL);
-}*/
+		SelectObject(pDC, pBrushOld);
+	SelectClipRgn(pDC, NULL);
+}

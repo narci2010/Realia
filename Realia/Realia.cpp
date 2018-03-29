@@ -64,9 +64,16 @@ void CRealiaWnd::OnPaint(HDC pDc)
 
 void CRealiaWnd::OnLButtonDown(POINT pt)
 {
+	if (!m_RectTracker.m_rect.IsRectNull()) {
+		UINT nHitTest = m_RectTracker.HitTest(pt);
+		if (nHitTest < 0) {
 
+		}
+		else {
+			m_RectTracker.Track(m_hWnd, pt);
+		}
+	}
 }
-
 void CRealiaWnd::OnLButtonUp(POINT pt)
 {
 
