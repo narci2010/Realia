@@ -24,9 +24,6 @@
     <ClCompile Include="Ruler.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="RectTracker.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Realia.h">
@@ -42,9 +39,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="atltypes.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RectTracker.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,15 +8,9 @@
 // See these sources for detailed information regarding the
 // Microsoft Foundation Classes product.
 
-#include "stdafx.h"
 #include "RectTracker.h"
-#include <assert.h>
 
 #define new DEBUG_NEW
-
-void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
-	LPCRECT lpRectLast, SIZE sizeLast,
-	HBRUSH pBrush = NULL, HBRUSH pBrushLast = NULL);
 
 /////////////////////////////////////////////////////////////////////////////
 // CRectTracker global state
@@ -283,7 +277,7 @@ void CRectTracker::Draw(HDC pDC) const
 			if (mask & (1 << i))
 			{
 				GetHandleRect((TrackerHit)i, &rect);
-				FillRect(pDC, rect, RGB(0, 0, 0));
+				FillRect(pDC, rect, CreateSolidBrush(RGB(0, 0, 0)));
 			}
 		}
 	}
@@ -443,6 +437,73 @@ void CRectTracker::DrawTrackerRect(
 	// remember last rectangles
 	m_rectLast = rect;
 	m_sizeLast = size;
+}
+
+void CRectTracker::DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
+	LPCRECT lpRectLast, SIZE sizeLast, HBRUSH pBrush, HBRUSH pBrushLast)
+{
+	//ASSERT(AfxIsValidAddress(lpRect, sizeof(RECT), FALSE));
+	//ASSERT(lpRectLast == NULL ||
+	//	AfxIsValidAddress(lpRectLast, sizeof(RECT), FALSE));
+	// first, determine the update region and select it
+	HRGN rgnNew;
+	HRGN rgnOutside, rgnInside;
+	rgnOutside = CreateRectRgnIndirect(lpRect);
+	CRect rect = *lpRect;
+	rect.InflateRect(-size.cx, -size.cy);
+	rect.IntersectRect(rect, lpRect);
+	rgnInside = CreateRectRgnIndirect(rect);
+	rgnNew = CreateRectRgn(0, 0, 0, 0);
+	CombineRgn(rgnNew, rgnOutside, rgnInside, RGN_XOR);
+	HBRUSH pBrushOld = NULL;
+	if (pBrush == NULL)
+	{
+		pBrush = GetHalftoneBrush();
+	}
+	assert(pBrush);
+	if (pBrushLast == NULL)
+	{
+		pBrushLast = pBrush;
+	}
+	HRGN rgnLast, rgnUpdate;
+	rgnLast = CreateRectRgn(0, 0, 0, 0);
+	rgnUpdate = CreateRectRgn(0, 0, 0, 0);
+	if (lpRectLast != NULL)
+	{
+		// find difference between new region and old region
+		//rgnLast = CreateRectRgn(0, 0, 0, 0);
+		SetRectRgn(rgnOutside, lpRectLast->left, lpRectLast->top, lpRectLast->right, lpRectLast->bottom);
+		rect = *lpRectLast;
+		rect.InflateRect(-sizeLast.cx, -sizeLast.cy);
+		rect.IntersectRect(rect, lpRectLast);
+		SetRectRgn(rgnInside, rect.left, rect.top, rect.right, rect.bottom);
+		CombineRgn(rgnLast, rgnOutside, rgnInside, RGN_XOR);
+		// only diff them if brushes are the same
+		if (pBrush == pBrushLast)
+		{
+			//rgnUpdate = CreateRectRgn(0, 0, 0, 0);
+			CombineRgn(rgnUpdate, rgnLast, rgnNew, RGN_XOR);
+		}
+	}
+	if (pBrush != pBrushLast && lpRectLast != NULL)
+	{
+		// brushes are different -- erase old region first
+		SelectClipRgn(pDC, rgnLast);
+		GetClipBox(pDC, &rect);
+		pBrushOld = (HBRUSH)SelectObject(pDC, pBrushLast);
+		PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
+		SelectObject(pDC, pBrushOld);
+		pBrushOld = NULL;
+	}
+	// draw into the update/new region
+	SelectClipRgn(pDC, rgnUpdate != NULL ? rgnUpdate : rgnNew);
+	GetClipBox(pDC, &rect);
+	pBrushOld = (HBRUSH)SelectObject(pDC, pBrush);
+	PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
+	// cleanup DC
+	if (pBrushOld != NULL)
+		SelectObject(pDC, pBrushOld);
+	SelectClipRgn(pDC, NULL);
 }
 
 void CRectTracker::AdjustRect(int nHandle, LPRECT)
@@ -678,7 +739,7 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 				if (bMoved)
 				{
 					m_bErase = TRUE;
-					DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
+					//DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
 				}
 				OnChangedRect(rectOld);
 				if (msg.message != WM_LBUTTONUP)
@@ -690,7 +751,7 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 			if (!rectOld.EqualRect(&m_rect))
 			{
 				m_bErase = FALSE;
-				DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
 			}
 			InvalidateRect(pWnd, NULL, false);
 			break;
@@ -703,7 +764,7 @@ BOOL CRectTracker::TrackHandle(int nHandle, HWND pWnd, CPoint point,
 			if (bMoved)
 			{
 				m_bErase = m_bFinalErase = TRUE;
-				DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
 			}
 			m_rect = rectSave;
 			goto ExitLoop;
@@ -788,9 +849,7 @@ UINT CRectTracker::GetHandleMask() const
 	return mask;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-
-HBRUSH PASCAL GetHalftoneBrush()
+HBRUSH PASCAL CRectTracker::GetHalftoneBrush()
 {
 	//AfxLockGlobals(CRIT_HALFTONEBRUSH);
 	if (_afxHalftoneBrush == NULL)
@@ -810,69 +869,5 @@ HBRUSH PASCAL GetHalftoneBrush()
 	//AfxUnlockGlobals(CRIT_HALFTONEBRUSH);
 	return _afxHalftoneBrush;
 }
-inline void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
-	LPCRECT lpRectLast, SIZE sizeLast, HBRUSH pBrush, HBRUSH pBrushLast)
-{
-	//ASSERT(AfxIsValidAddress(lpRect, sizeof(RECT), FALSE));
-	//ASSERT(lpRectLast == NULL ||
-	//	AfxIsValidAddress(lpRectLast, sizeof(RECT), FALSE));
-	// first, determine the update region and select it
-	HRGN rgnNew;
-	HRGN rgnOutside, rgnInside;
-	rgnOutside = CreateRectRgnIndirect(lpRect);
-	CRect rect = *lpRect;
-	rect.InflateRect(-size.cx, -size.cy);
-	rect.IntersectRect(rect, lpRect);
-	rgnInside = CreateRectRgnIndirect(rect);
-	rgnNew = CreateRectRgn(0, 0, 0, 0);
-	CombineRgn(rgnNew, rgnOutside, rgnInside, RGN_XOR);
-	HBRUSH pBrushOld = NULL;
-	if (pBrush == NULL)
-	{
-		pBrush = GetHalftoneBrush();
-	}
-	assert(pBrush);
-	if (pBrushLast == NULL)
-	{
-		pBrushLast = pBrush;
-	}
-	HRGN rgnLast, rgnUpdate;
-	rgnLast = CreateRectRgn(0, 0, 0, 0);
-	rgnUpdate = CreateRectRgn(0, 0, 0, 0);
-	if (lpRectLast != NULL)
-	{
-		// find difference between new region and old region
-		//rgnLast = CreateRectRgn(0, 0, 0, 0);
-		SetRectRgn(rgnOutside, lpRectLast->left, lpRectLast->top, lpRectLast->right, lpRectLast->bottom);
-		rect = *lpRectLast;
-		rect.InflateRect(-sizeLast.cx, -sizeLast.cy);
-		rect.IntersectRect(rect, lpRectLast);
-		SetRectRgn(rgnInside, rect.left, rect.top, rect.right, rect.bottom);
-		CombineRgn(rgnLast, rgnOutside, rgnInside, RGN_XOR);
-		// only diff them if brushes are the same
-		if (pBrush == pBrushLast)
-		{
-			//rgnUpdate = CreateRectRgn(0, 0, 0, 0);
-			CombineRgn(rgnUpdate, rgnLast, rgnNew, RGN_XOR);
-		}
-	}
-	if (pBrush != pBrushLast && lpRectLast != NULL)
-	{
-		// brushes are different -- erase old region first
-		SelectClipRgn(pDC, rgnLast);
-		GetClipBox(pDC, &rect);
-		pBrushOld = (HBRUSH)SelectObject(pDC, pBrushLast);
-		PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
-		SelectObject(pDC, pBrushOld);
-		pBrushOld = NULL;
-	}
-	// draw into the update/new region
-	SelectClipRgn(pDC, rgnUpdate != NULL ? rgnUpdate : rgnNew);
-	GetClipBox(pDC, &rect);
-	pBrushOld = (HBRUSH)SelectObject(pDC, pBrush);
-	PatBlt(pDC, rect.left, rect.top, rect.Width(), rect.Height(), PATINVERT);
-	// cleanup DC
-	if (pBrushOld != NULL)
-		SelectObject(pDC, pBrushOld);
-	SelectClipRgn(pDC, NULL);
-}
+
+/////////////////////////////////////////////////////////////////////////////

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
-#include "RectTracker.h"
+#include "Ruler.h"
 
 class CRealiaWnd
 {
@@ -27,7 +27,7 @@ private:
 	POINT m_ptBegin;
 	POINT m_ptEnd;
 
-	CRectTracker m_RectTracker;
+	CRuler m_RectTracker[10];
 
 	int m_iRealiaType;//教具类型
 

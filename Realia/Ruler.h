@@ -2,11 +2,19 @@
 
 #include "stdafx.h"
 
+static inline BOOL IsPointEqual(LPPOINT lppt1, LPPOINT lppt2)
+{
+	if ((*lppt1).x == (*lppt2).x && (*lppt1).y == (*lppt2).y)
+		return TRUE;
+	else
+		return FALSE;
+}
+
 class CRuler
 {
 public:
 	CRuler();
-	~CRuler();
+	CRuler(LPPOINT lpptBegin, LPPOINT lpptEnd, UINT nStyle);
 
 	// Style Flags
 	enum StyleFlags
@@ -24,40 +32,34 @@ public:
 	};
 
 	// Attributes
-	UINT m_nStyle;      // current state
-	RECT m_rect;        // current position (always in pixels)
-	SIZE m_sizeMin;    // minimum X and Y size during track operation
-	int m_nHandleSize;  // size of resize handles (default from WIN.INI)
+	UINT m_nStyle;
+	HRGN m_rgn;
+	POINT m_ptBegin;
+	POINT m_ptEnd;
 
-						// Operations
-	void Draw(HDC* pDC) const;
-	//void GetTrueRect(LPRECT lpTrueRect) const;
-	//BOOL SetCursor(HWND* pWnd, UINT nHitTest) const;
-	//BOOL Track(HWND* pWnd, POINT point, BOOL bAllowInvert = FALSE,
-	//	HWND* pWndClipTo = NULL);
-	//BOOL TrackRubberBand(HWND* pWnd, POINT point, BOOL bAllowInvert = TRUE);
-	//int HitTest(POINT point) const;
-	//int NormalizeHit(int nHandle) const;
+	void Draw(HDC pDC) const;
+	int HitTest(POINT pt) const;
+	BOOL SetCursor(HWND pWnd, UINT nHitTest) const;
+	BOOL Track(HWND pWnd, POINT point, BOOL bAllowInvert = FALSE,
+		HWND pWndClipTo = NULL);
+	BOOL TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert = TRUE);
 
-	//// Overridables
-	//virtual void DrawTrackerRect(LPCRECT lpRect, HWND* pWndClipTo,
-	//	HDC* pDC, HWND* pWnd);
-	//virtual void AdjustRect(int nHandle, LPRECT lpRect);
-	//virtual void OnChangedRect(const RECT& rectOld);
-	//virtual UINT GetHandleMask() const;
+	BOOL IsRegionNull();
+	
+public:
+	virtual ~CRuler();
+
+protected:
+	BOOL m_bErase;
+	BOOL m_bFinalErase;
+
+	void Construct();
+	int HitTestHandles(POINT point) const;
+	BOOL TrackHandle(int nHandle, HWND pWnd, POINT point, HWND pWndClipTo);
+	void GetModifyPointers(int nHandle, int**ppx, int**ppy, int* px, int*py);
+	virtual void AdjustRect(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd);
 
 private:
-	BOOL m_bAllowInvert;    // flag passed to Track or TrackRubberBand
-	RECT m_rectLast;
-	RECT m_sizeLast;
-	BOOL m_bErase;          // TRUE if DrawTrackerRect is called for erasing
-	BOOL m_bFinalErase;     // TRUE if DragTrackerRect called for final erase
+	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50) const;
 
-							// implementation helpers
-	//int HitTestHandles(POINT point) const;
-	//void GetHandleRect(int nHandle, RECT* pHandleRect) const;
-	//void GetModifyPointers(int nHandle, int**ppx, int**ppy, int* px, int*py);
-	//virtual int GetHandleSize(LPCRECT lpRect = NULL) const;
-	//BOOL TrackHandle(int nHandle, HWND* pWnd, POINT point, POINT* pWndClipTo);
-	//void Construct();
 };

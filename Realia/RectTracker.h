@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "atltypes.h"
+#include <assert.h>
 
 
 //CRectTracker使用的MFC宏定义
@@ -80,8 +81,8 @@ public:
 	CSize m_sizeMin;    // minimum X and Y size during track operation
 	int m_nHandleSize;  // size of resize handles (default from WIN.INI)
 
-						// Operations
-	void Draw(HDC pDC) const;
+	// Operations
+	virtual void Draw(HDC pDC) const;
 	void GetTrueRect(LPRECT lpTrueRect) const;
 	BOOL SetCursor(HWND pWnd, UINT nHitTest) const;
 	BOOL Track(HWND pWnd, CPoint point, BOOL bAllowInvert = FALSE,
@@ -93,9 +94,14 @@ public:
 	// Overridables
 	virtual void DrawTrackerRect(LPCRECT lpRect, HWND pWndClipTo,
 		HDC pDC, HWND pWnd);
+	void DrawDragRect(HDC pDC, LPCRECT lpRect, SIZE size,
+		LPCRECT lpRectLast, SIZE sizeLast,
+		HBRUSH pBrush = NULL, HBRUSH pBrushLast = NULL);
 	virtual void AdjustRect(int nHandle, LPRECT lpRect);
 	virtual void OnChangedRect(const CRect& rectOld);
 	virtual UINT GetHandleMask() const;
+
+	static HBRUSH PASCAL GetHalftoneBrush();
 
 	// Implementation
 public:
@@ -108,7 +114,7 @@ protected:
 	BOOL m_bErase;          // TRUE if DrawTrackerRect is called for erasing
 	BOOL m_bFinalErase;     // TRUE if DragTrackerRect called for final erase
 
-							// implementation helpers
+	// implementation helpers
 	int HitTestHandles(CPoint point) const;
 	void GetHandleRect(int nHandle, CRect* pHandleRect) const;
 	void GetModifyPointers(int nHandle, int**ppx, int**ppy, int* px, int*py);

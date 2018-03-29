@@ -25,9 +25,6 @@ void CRealiaWnd::InitWindow(HWND hWnd)
 	GetClientRect(m_hWnd, &m_rcWindow);
 	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
 	m_lWndHeight = m_rcWindow.bottom - m_rcWindow.top;
-
-	m_RectTracker.m_rect.SetRect(100, 100, 500, 500);
-	m_RectTracker.m_nStyle = CRectTracker::solidLine | CRectTracker::resizeInside;
 }
 
 void CRealiaWnd::OnPaint(HDC pDc)
@@ -42,7 +39,8 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	DrawBackground(hDcMem, m_rcWindow);
 
 	//œ∆§ΩÓ¿‡ª≠Õº
-	m_RectTracker.Draw(hDcMem);
+	for (int i = 0; i < 10; i++)
+		m_RectTracker[i].Draw(hDcMem);
 
 	//ª≠÷±≥ﬂ
 	if (m_bIsLButtonDown) {
@@ -64,13 +62,20 @@ void CRealiaWnd::OnPaint(HDC pDc)
 
 void CRealiaWnd::OnLButtonDown(POINT pt)
 {
-	if (!m_RectTracker.m_rect.IsRectNull()) {
-		UINT nHitTest = m_RectTracker.HitTest(pt);
-		if (nHitTest < 0) {
-
+	int i = 0;
+	for (i = 0; i < 10; i++) {
+		if (!m_RectTracker[i].IsRegionNull()) {
+			int nHitTest = m_RectTracker[i].HitTest(pt);
+			if (nHitTest >= 0 && nHitTest <= 8) {
+				m_RectTracker[i].Track(m_hWnd, pt);
+				return;
+			}
 		}
-		else {
-			m_RectTracker.Track(m_hWnd, pt);
+	}
+	for (i = 0; i < 10; i++) {
+		if (m_RectTracker[i].IsRegionNull()) {
+			m_RectTracker[i].TrackRubberBand(m_hWnd, pt, true);
+			break;
 		}
 	}
 }
@@ -86,11 +91,12 @@ void CRealiaWnd::OnMouseMove(POINT pt)
 
 BOOL CRealiaWnd::OnSetCursor(HWND pWnd, UINT nHitTest)
 {
-	if (!m_RectTracker.m_rect.IsRectNull())
-	{
-		if (m_RectTracker.SetCursor(m_hWnd, nHitTest))
-		{
-			return FALSE;
+	for (int i = 0; i < 10; i++) {
+		if (!m_RectTracker[i].IsRegionNull()) {
+			if (m_RectTracker[i].SetCursor(m_hWnd, nHitTest))
+			{
+				return FALSE;
+			}
 		}
 	}
 	SetCursor(LoadCursor(NULL, IDC_ARROW));
