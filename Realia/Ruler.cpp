@@ -1,6 +1,7 @@
 #include "Ruler.h"
 #include <assert.h>
 #include <cstddef>
+#include <stdlib.h>
 
 #define AFX_STATIC_DATA extern __declspec(selectany)
 
@@ -149,8 +150,8 @@ void CRuler::Construct()
 	//m_nHandleSize = _afxHandleSize;
 	//m_sizeMin.cy = m_sizeMin.cx = m_nHandleSize * 2;
 
-	//m_rectLast.SetRectEmpty();
-	//m_sizeLast.cx = m_sizeLast.cy = 0;
+	m_rgn = CreateRectRgn(0, 0, 0, 0);
+	m_ptBegin = m_ptEnd = { 0,0 };
 	m_bErase = FALSE;
 	m_bFinalErase = FALSE;
 }
@@ -173,17 +174,9 @@ int CRuler::HitTest(POINT point) const
 {
 	TrackerHit hitResult = hitNothing;
 
-	//CRect rectTrue;
-	//GetTrueRect(&rectTrue);
-	//assert(rectTrue.left <= rectTrue.right);
-	//assert(rectTrue.top <= rectTrue.bottom);
-	//if (rectTrue.PtInRect(point))
-	//{
-	//	if ((m_nStyle & (resizeInside | resizeOutside)) != 0)
-	//		hitResult = (TrackerHit)HitTestHandles(point);
-	//	else
-	//		hitResult = hitMiddle;
-	//}
+	assert(m_ptBegin.x <= m_ptEnd.x);
+	hitResult = (TrackerHit)HitTestHandles(point);
+
 	return hitResult;
 }
 
@@ -194,29 +187,29 @@ BOOL CRuler::SetCursor(HWND pWnd, UINT nHitTest) const
 		return FALSE;
 
 	// convert cursor position to client co-ordinates
-	//CPoint point;
-	//GetCursorPos(&point);
-	//ScreenToClient(pWnd, &point);
+	POINT point;
+	GetCursorPos(&point);
+	ScreenToClient(pWnd, &point);
 
-	//// do hittest and normalize hit
-	//int nHandle = HitTestHandles(point);
-	//if (nHandle < 0)
-	//	return FALSE;
+	// do hittest and normalize hit
+	int nHandle = HitTestHandles(point);
+	if (nHandle < 0)
+		return FALSE;
 
-	//// need to normalize the hittest such that we get proper cursors
-	//nHandle = NormalizeHit(nHandle);
+	// need to normalize the hittest such that we get proper cursors
+	nHandle = NormalizeHit(nHandle);
 
-	//// handle special case of hitting area between handles
-	////  (logically the same -- handled as a move -- but different cursor)
-	//if (nHandle == hitMiddle && !m_rect.PtInRect(point))
-	//{
-	//	// only for trackers with hatchedBorder (ie. in-place resizing)
-	//	if (m_nStyle & hatchedBorder)
-	//		nHandle = (TrackerHit)9;
-	//}
+	// handle special case of hitting area between handles
+	//  (logically the same -- handled as a move -- but different cursor)
+	if (nHandle == hitMiddle && !PtInRegion(m_rgn, point.x, point.y))
+	{
+		// only for trackers with hatchedBorder (ie. in-place resizing)
+		if (m_nStyle & hatchedBorder)
+			nHandle = (TrackerHit)9;
+	}
 
-	//assert(nHandle < _countof(_afxCursors));
-	//::SetCursor(_afxCursors[nHandle]);
+	assert(nHandle < _countof(_afxCursors));
+	::SetCursor(_afxCursors[nHandle]);
 	return TRUE;
 }
 
@@ -225,57 +218,55 @@ BOOL CRuler::Track(HWND pWnd, POINT point, BOOL bAllowInvert,
 {
 	// perform hit testing on the handles
 	int nHandle = HitTestHandles(point);
-	//if (nHandle < 0)
-	//{
-	//	// didn't hit a handle, so just return FALSE
-	//	return FALSE;
-	//}
+	if (nHandle < 0)
+	{
+		// didn't hit a handle, so just return FALSE
+		return FALSE;
+	}
 
-	//// otherwise, call helper function to do the tracking
-	//m_bAllowInvert = bAllowInvert;
+	// otherwise, call helper function to do the tracking
+	m_bAllowInvert = bAllowInvert;
 	return TrackHandle(nHandle, pWnd, point, pWndClipTo);
 }
 
 BOOL CRuler::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
 {
 	// simply call helper function to track from bottom right handle
-	//m_bAllowInvert = bAllowInvert;
-	//m_rect.SetRect(point.x, point.y, point.x, point.y);
+	m_bAllowInvert = bAllowInvert;
+	m_ptBegin = m_ptEnd = point;
+	m_rgn = CreateRectRgn(0, 0, 0, 0);
 	return TrackHandle(hitBottomRight, pWnd, point, NULL);
+}
+
+int CRuler::NormalizeHit(int nHandle) const
+{
+	assert(nHandle <= 8 && nHandle >= -1);
+	if (nHandle == hitMiddle || nHandle == hitNothing)
+		return nHandle;
+	assert(0 <= nHandle && nHandle < _countof(_afxHandleInfo));
+	const AFX_HANDLEINFO* pHandleInfo = &_afxHandleInfo[nHandle];
+	if (m_ptEnd.x - m_ptBegin.x < 0)
+	{
+		nHandle = (TrackerHit)pHandleInfo->nInvertX;
+		assert(0 <= nHandle && nHandle < _countof(_afxHandleInfo));
+		pHandleInfo = &_afxHandleInfo[nHandle];
+	}
+	if (m_ptEnd.y - m_ptBegin.y < 0)
+		nHandle = (TrackerHit)pHandleInfo->nInvertY;
+	return nHandle;
 }
 
 int CRuler::HitTestHandles(POINT point) const
 {
-	//CRect rect;
-	//UINT mask = GetHandleMask();
-
-	//// see if hit anywhere inside the tracker
-	//GetTrueRect(&rect);
-	//if (!rect.PtInRect(point))
-	//	return hitNothing;  // totally missed
-
-	//						// see if we hit a handle
-	//for (int i = 0; i < 8; ++i)
-	//{
-	//	if (mask & (1 << i))
-	//	{
-	//		GetHandleRect((TrackerHit)i, &rect);
-	//		if (rect.PtInRect(point))
-	//			return (TrackerHit)i;
-	//	}
-	//}
-
-	//// last of all, check for non-hit outside of object, between resize handles
-	//if ((m_nStyle & hatchedBorder) == 0)
-	//{
-	//	CRect rect = m_rect;
-	//	rect.NormalizeRect();
-	//	if ((m_nStyle & dottedLine | solidLine) != 0)
-	//		rect.InflateRect(+1, +1);
-	//	if (!rect.PtInRect(point))
-	//		return hitNothing;  // must have been between resize handles
-	//}
-	return hitMiddle;   // no handle hit, but hit object (or object border)
+	HRGN rgn = CreateEllipticRgn(m_ptEnd.x - 5, m_ptEnd.y - 5, m_ptEnd.x + 5, m_ptEnd.y + 5);
+	if (PtInRegion(rgn, point.x, point.y)) {
+		return hitTopRight;
+	}
+	else if (PtInRegion(m_rgn, point.x, point.y)) {
+		return hitMiddle;
+	}
+	else
+		return hitNothing;
 }
 
 BOOL CRuler::TrackHandle(int nHandle, HWND pWnd, POINT point,
@@ -284,7 +275,7 @@ BOOL CRuler::TrackHandle(int nHandle, HWND pWnd, POINT point,
 	assert(nHandle >= 0);
 	assert(nHandle <= 8);   // handle 8 is inside the rect
 
-							// don't handle if capture already set
+	// don't handle if capture already set
 	if (::GetCapture() != NULL)
 		return FALSE;
 
@@ -358,7 +349,7 @@ BOOL CRuler::TrackHandle(int nHandle, HWND pWnd, POINT point,
 				m_ptEnd.y = m_ptEnd.y + nHeight;
 			}
 			// allow caller to adjust the rectangle if necessary
-			//AdjustRect(nHandle, &m_rect);
+			AdjustRgn(nHandle, &m_ptBegin, &m_ptEnd);
 
 			// only redraw and callback if the rect actually changed!
 			m_bFinalErase = (msg.message == WM_LBUTTONUP);
@@ -474,7 +465,7 @@ void CRuler::GetModifyPointers(
 	}
 }
 
-void CRuler::AdjustRect(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd)
+void CRuler::AdjustRgn(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd)
 {
 	if (nHandle == hitMiddle)
 		return;
@@ -482,6 +473,24 @@ void CRuler::AdjustRect(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd)
 	// convert the handle into locations within m_rect
 	int *px, *py;
 	GetModifyPointers(nHandle, &px, &py, NULL, NULL);
+
+	//m_rgn = CreateRectRgn(m_ptBegin.x, m_ptBegin.y, m_ptEnd.x, m_ptEnd.y + 50);
+	int iHeight = 50;
+	POINT pt3, pt4;
+	double ptx = m_ptEnd.x - m_ptBegin.x;
+	double pty = m_ptEnd.y - m_ptBegin.y;
+	double pl = sqrt(ptx * ptx + pty * pty);
+	double theta = atan(pty / ptx);
+	pt3.x = m_ptEnd.x - iHeight * sin(theta);
+	pt3.y = m_ptEnd.y + iHeight * cos(theta);
+	pt4.x = m_ptBegin.x - iHeight * sin(theta);
+	pt4.y = m_ptBegin.y + iHeight * cos(theta);
+	POINT pts[4];
+	pts[0] = m_ptBegin;
+	pts[1] = m_ptEnd;
+	pts[2] = pt3;
+	pts[3] = pt4;
+	m_rgn = CreatePolygonRgn(pts, 4, WINDING);
 }
 
 //画直尺：5像素为1毫米，固定直尺总宽度为60像素

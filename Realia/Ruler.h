@@ -45,11 +45,13 @@ public:
 	BOOL TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert = TRUE);
 
 	BOOL IsRegionNull();
+	int NormalizeHit(int nHandle) const;
 	
 public:
 	virtual ~CRuler();
 
 protected:
+	BOOL m_bAllowInvert;
 	BOOL m_bErase;
 	BOOL m_bFinalErase;
 
@@ -57,7 +59,7 @@ protected:
 	int HitTestHandles(POINT point) const;
 	BOOL TrackHandle(int nHandle, HWND pWnd, POINT point, HWND pWndClipTo);
 	void GetModifyPointers(int nHandle, int**ppx, int**ppy, int* px, int*py);
-	virtual void AdjustRect(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd);
+	virtual void AdjustRgn(int nHandle, LPPOINT lpBegin, LPPOINT lpEnd);
 
 private:
 	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50) const;
