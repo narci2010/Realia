@@ -1,38 +1,73 @@
 #pragma once
 
-#include "stdafx.h"
-#include "Ruler.h"
+static inline BOOL IsPointEqual(POINT pt1, POINT pt2)
+{
+	if (pt1.x == pt2.x && pt1.y == pt2.y)
+		return TRUE;
+	else
+		return FALSE;
+}
 
-class CRealiaWnd
+//把一个点的坐标赋给另一个点
+static inline BOOL EqualPoint(LPPOINT lpptDest, LPPOINT lpptSrc)
+{
+	(*lpptDest).x = (*lpptSrc).x;
+	(*lpptDest).y = (*lpptSrc).y;
+	return TRUE;
+}
+
+class CRealia
 {
 public:
-	CRealiaWnd();
-	~CRealiaWnd();
+	CRealia();
+	CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle);
 
-	void InitWindow(HWND hWnd);
-	void OnPaint(HDC pDc);
-	void OnLButtonDown(POINT pt);
-	void OnLButtonUp(POINT pt);
-	void OnMouseMove(POINT pt);
-	BOOL OnSetCursor(HWND pWnd, UINT nHitTest);
+	// Style Flags
+	enum StyleFlags
+	{
+		Ruler = 1, AcuteTriangle = 2, IsoscelesTriangle = 3,
+		Protractor = 4, Goniometer = 5, Compass = 6,
+	};
 
-private:
-	HWND m_hWnd;
+	// Hit-Test codes
+	enum TrackerHit
+	{
+		hitNothing = -1,
+		hitTopLeft = 0, hitTopRight = 1, hitBottomRight = 2, hitBottomLeft = 3,
+		hitTop = 4, hitRight = 5, hitBottom = 6, hitLeft = 7, hitMiddle = 8,
+		hitDrag = 9
+	};
 
-	RECT m_rcWindow;//窗口矩形（客户区的相对位置，起点为(0,0)，使用屏幕坐标时需要转换）
-	LONG m_lWndWidth;//窗口宽度
-	LONG m_lWndHeight;//窗口高度
-
-	BOOL m_bIsLButtonDown;
+	// Attributes
+	UINT m_nStyle;
+	HRGN m_rgn;
 	POINT m_ptBegin;
 	POINT m_ptEnd;
 
-	CRuler m_RectTracker[10];
+	void Draw(HDC pDC) const;
+	int HitTest(POINT pt);
+	BOOL SetCursor(HWND pWnd, UINT nHitTest);
+	BOOL Track(HWND pWnd, POINT point, BOOL bAllowInvert = FALSE,
+		HWND pWndClipTo = NULL);
+	BOOL TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert = TRUE);
 
-	int m_iRealiaType;//教具类型
+	BOOL IsRegionNull() const;
 
-	//画背景
-	void DrawBackground(HDC dc, RECT rc);
-	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50);
-	void DrawProtractor(HDC dc, POINT pt1, POINT pt2);
+public:
+	virtual ~CRealia();
+
+protected:
+	BOOL m_bAllowInvert;
+	BOOL m_bErase;
+	BOOL m_bFinalErase;
+	UINT m_iHeight;
+
+	void Construct();
+	BOOL TrackHandle(int nHandle, HWND pWnd, POINT point, HWND pWndClipTo);
+	void ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, POINT ptDown, POINT ptLast);
+	void AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd);
+
+private:
+	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50) const;
+	void DrawProtractor(HDC dc, POINT pt1, POINT pt2) const;
 };

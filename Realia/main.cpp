@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "resource.h"
-#include "Realia.h"
+#include "RealiaWnd.h"
 
 //全局变量
 CRealiaWnd m_CRealiaWnd;
@@ -95,6 +95,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		// 分析菜单选择:
 		switch (wmId)
 		{
+		case IDM_RULER:
+			m_CRealiaWnd.SetRealiaType(1);
+			break;
+		case IDM_ACUTE:
+			m_CRealiaWnd.SetRealiaType(2);
+			break;
+		case IDM_ISOSCELES:
+			m_CRealiaWnd.SetRealiaType(3);
+			break;
+		case IDM_PROTRACTOR:
+			m_CRealiaWnd.SetRealiaType(4);
+			break;
+		case IDM_GONIOMETER:
+			m_CRealiaWnd.SetRealiaType(5);
+			break;
+		case IDM_COMPASS:
+			m_CRealiaWnd.SetRealiaType(6);
+			break;
 		case IDCLOSE:
 			DestroyWindow(hWnd);
 			break;

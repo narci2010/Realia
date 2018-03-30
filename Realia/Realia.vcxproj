@@ -148,13 +148,12 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Realia.cpp" />
-    <ClCompile Include="Ruler.cpp" />
+    <ClCompile Include="RealiaWnd.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="atltypes.h" />
     <ClInclude Include="Realia.h" />
+    <ClInclude Include="RealiaWnd.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Ruler.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

@@ -21,7 +21,7 @@
     <ClCompile Include="Realia.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Ruler.cpp">
+    <ClCompile Include="RealiaWnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,10 +35,7 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Ruler.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="atltypes.h">
+    <ClInclude Include="RealiaWnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,22 +1,22 @@
-#include "Ruler.h"
+#include "Protractor.h"
 
-CRuler::CRuler()
+CProtractor::CProtractor()
 {
 	m_nStyle = CRealia::Ruler;
 	m_iHeight = 50;
 }
 
-CRuler::~CRuler()
+CProtractor::~CProtractor()
 {
 }
 
-CRuler::CRuler(UINT iHeight)
+CProtractor::CProtractor(UINT iHeight)
 {
 	m_nStyle = CRealia::Ruler;
 	m_iHeight = iHeight;
 }
 
-int CRuler::HitTest(POINT point) const
+int CProtractor::HitTest(POINT point) const
 {
 	TrackerHit hitResult = hitNothing;
 
@@ -34,7 +34,7 @@ int CRuler::HitTest(POINT point) const
 	return hitResult;
 }
 
-void CRuler::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
+void CProtractor::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 {
 	//m_rgn = CreateRectRgn(m_ptBegin.x, m_ptBegin.y, m_ptEnd.x, m_ptEnd.y + 50);
 	int iHeight = 50;
@@ -59,7 +59,7 @@ void CRuler::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 	m_rgn = CreatePolygonRgn(pts, 4, WINDING);
 }
 
-void CRuler::DrawInside(HDC dc, POINT pt1, POINT pt2) const
+void CProtractor::DrawInside(HDC dc, POINT pt1, POINT pt2) const
 {
 	//画内部区域，有继承类自己实现
 	DrawRuler(dc, pt1, pt2, m_iHeight);
@@ -67,7 +67,7 @@ void CRuler::DrawInside(HDC dc, POINT pt1, POINT pt2) const
 
 //画直尺：5像素为1毫米，固定直尺总宽度为60像素
 //普通刻度10像素长，5的倍数20像素长，10的倍数25像素长
-void CRuler::DrawRuler(HDC dc, POINT pt1, POINT pt2, int iHeight) const
+void CProtractor::DrawRuler(HDC dc, POINT pt1, POINT pt2, int iHeight) const
 {
 	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 	HPEN oldpen = (HPEN)SelectObject(dc, pen);

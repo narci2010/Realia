@@ -1,133 +1,466 @@
 #include "stdafx.h"
 #include "Realia.h"
+#include <cstddef>
+#include <stdlib.h>
 
-CRealiaWnd::CRealiaWnd()
+#define AFX_STATIC_DATA extern __declspec(selectany)
+
+AFX_STATIC_DATA HCURSOR _afxCursors[10] = { 0, };
+AFX_STATIC_DATA HBRUSH _afxHatchBrush = 0;
+AFX_STATIC_DATA HPEN _afxBlackDottedPen = 0;
+AFX_STATIC_DATA int _afxHandleSize = 0;
+
+CRealia::CRealia()
 {
-	::ZeroMemory(&m_rcWindow, sizeof(m_rcWindow));
-	m_lWndWidth = 0;
-	m_lWndHeight = 0;
-
-	m_bIsLButtonDown = false;
-	m_ptBegin.x = m_ptBegin.y = 0;
-	m_ptEnd.x = m_ptEnd.y = 0;
+	Construct();
 }
 
-CRealiaWnd::~CRealiaWnd()
+CRealia::~CRealia()
 {
-
+	DeleteObject((HGDIOBJ*)&_afxHatchBrush);
+	DeleteObject((HGDIOBJ*)&_afxBlackDottedPen);
+	DeleteObject(m_rgn);
 }
 
-void CRealiaWnd::InitWindow(HWND hWnd)
+CRealia::CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle)
 {
-	m_hWnd = hWnd;
-
-	//GetWindowRect(m_hWnd, &m_rcWindow);
-	GetClientRect(m_hWnd, &m_rcWindow);
-	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
-	m_lWndHeight = m_rcWindow.bottom - m_rcWindow.top;
-}
-
-void CRealiaWnd::OnPaint(HDC pDc)
-{
-	//创建与windowDC兼容的内存设备环境  
-	HDC hDcMem = CreateCompatibleDC(pDc);
-	//位图的初始化和载入位图     
-	HBITMAP hBmpMem = CreateCompatibleBitmap(pDc, m_lWndWidth, m_lWndHeight);
-	HBITMAP hBmpOld = (HBITMAP)SelectObject(hDcMem, hBmpMem);
-
-	//绘制背景
-	DrawBackground(hDcMem, m_rcWindow);
-
-	//橡皮筋类画图
-	for (int i = 0; i < 10; i++)
-		m_RectTracker[i].Draw(hDcMem);
-
-	//画直尺
-	if (m_bIsLButtonDown) {
-		//DrawRuler(hDcMem, m_ptBegin, m_ptEnd);
-		//DrawProtractor(hDcMem, m_ptBegin, m_ptEnd);
+	Construct();
+	m_ptBegin.x = ptBegin.x;
+	m_ptBegin.y = ptBegin.y;
+	m_ptEnd.x = ptEnd.x;
+	m_ptEnd.y = ptEnd.y;
+	m_nStyle = nStyle;
+	if (m_nStyle == CRealia::Ruler) {
+		m_iHeight = 50;
 	}
-	//POINT pt1 = { 100, 400 };
-	//POINT pt2 = { 500, 300 };
-	//DrawProtractor(hDcMem, pt1, pt2);
-
-	//双缓冲技术
-	BitBlt(pDc, 0, 0, m_lWndWidth, m_lWndHeight, hDcMem, 0, 0, SRCCOPY);
-	SelectObject(hDcMem, hBmpOld);
-	//释放资源
-	DeleteDC(hDcMem);
-	DeleteObject(hBmpMem);
-	DeleteObject(hBmpOld);
 }
 
-void CRealiaWnd::OnLButtonDown(POINT pt)
+void CRealia::Construct()
 {
-	int i = 0;
-	for (i = 0; i < 10; i++) {
-		if (!m_RectTracker[i].IsRegionNull()) {
-			int nHitTest = m_RectTracker[i].HitTest(pt);
-			if (nHitTest >= 0 && nHitTest <= 8) {
-				m_RectTracker[i].Track(m_hWnd, pt);
-				return;
+	// do one-time initialization if necessary
+	//AfxLockGlobals(CRIT_RECTTRACKER);
+	static BOOL bInitialized;
+	if (!bInitialized)
+	{
+
+		if (_afxHatchBrush == NULL)
+		{
+			// create the hatch pattern + bitmap
+			WORD hatchPattern[8];
+			WORD wPattern = 0x1111;
+			for (int i = 0; i < 4; i++)
+			{
+				hatchPattern[i] = wPattern;
+				hatchPattern[i + 4] = wPattern;
+				wPattern <<= 1;
+			}
+			HBITMAP hatchBitmap = CreateBitmap(8, 8, 1, 1, hatchPattern);
+			if (hatchBitmap == NULL)
+			{
+				//AfxUnlockGlobals(CRIT_RECTTRACKER);
+				//AfxThrowResourceException();
+			}
+
+			// create black hatched brush
+			_afxHatchBrush = CreatePatternBrush(hatchBitmap);
+			DeleteObject(hatchBitmap);
+			if (_afxHatchBrush == NULL)
+			{
+				//AfxUnlockGlobals(CRIT_RECTTRACKER);
+				//AfxThrowResourceException();
 			}
 		}
+
+		if (_afxBlackDottedPen == NULL)
+		{
+			// create black dotted pen
+			_afxBlackDottedPen = CreatePen(PS_DOT, 0, RGB(0, 0, 0));
+			if (_afxBlackDottedPen == NULL)
+			{
+				//AfxUnlockGlobals(CRIT_RECTTRACKER);
+				//AfxThrowResourceException();
+			}
+		}
+
+		// Note: all track cursors must live in same module
+		//HINSTANCE hInst = AfxFindResourceHandle(
+		//	ATL_MAKEINTRESOURCE(AFX_IDC_TRACK4WAY), ATL_RT_GROUP_CURSOR);
+
+		// initialize the cursor array
+		_afxCursors[0] = ::LoadCursorW(NULL, IDC_SIZENWSE);
+		_afxCursors[1] = ::LoadCursorW(NULL, IDC_SIZENESW);
+		_afxCursors[2] = _afxCursors[0];
+		_afxCursors[3] = _afxCursors[1];
+		_afxCursors[4] = ::LoadCursorW(NULL, IDC_SIZENS);
+		_afxCursors[5] = ::LoadCursorW(NULL, IDC_SIZEWE);
+		_afxCursors[6] = _afxCursors[4];
+		_afxCursors[7] = _afxCursors[5];
+		_afxCursors[8] = ::LoadCursorW(NULL, IDC_SIZEALL);
+		_afxCursors[9] = ::LoadCursorW(NULL, IDC_CROSS);
+
+		// get default handle size from Windows profile setting
+		static const TCHAR szWindows[] = _T("windows");
+		static const TCHAR szInplaceBorderWidth[] =
+			_T("oleinplaceborderwidth");
+		_afxHandleSize = GetProfileInt(szWindows, szInplaceBorderWidth, 4);
+		bInitialized = TRUE;
 	}
-	for (i = 0; i < 10; i++) {
-		if (m_RectTracker[i].IsRegionNull()) {
-			m_RectTracker[i].TrackRubberBand(m_hWnd, pt, true);
+
+	m_nStyle = 0;
+	m_iHeight = 0;
+	//m_nHandleSize = _afxHandleSize;
+	//m_sizeMin.cy = m_sizeMin.cx = m_nHandleSize * 2;
+
+	m_rgn = CreateRectRgn(0, 0, 0, 0);
+	m_ptBegin = m_ptEnd = { 0, 0 };
+	m_bErase = FALSE;
+	m_bFinalErase = FALSE;
+}
+
+void CRealia::Draw(HDC pDC) const
+{
+	if (IsRegionNull())
+		return;
+	// set initial DC state
+	assert(SaveDC(pDC) != 0);
+	SetMapMode(pDC, MM_TEXT);
+	//pDC->SetViewportOrg(0, 0);
+	//pDC->SetWindowOrg(0, 0);
+
+	//画内部区域
+	if (m_nStyle == CRealia::Ruler) {
+		DrawRuler(pDC, m_ptBegin, m_ptEnd, m_iHeight);
+	}
+	else if (m_nStyle == CRealia::Protractor) {
+		DrawProtractor(pDC, m_ptBegin, m_ptEnd);
+	}
+
+	assert(RestoreDC(pDC, -1));
+}
+
+int CRealia::HitTest(POINT point)
+{
+	TrackerHit hitResult = hitNothing;
+
+	assert(m_ptBegin.x <= m_ptEnd.x);
+
+	AdjustRgn(0, m_ptBegin, m_ptEnd);
+
+	HRGN rgn = CreateEllipticRgn(m_ptEnd.x - 5, m_ptEnd.y - 5, m_ptEnd.x + 5, m_ptEnd.y + 5);
+	if (PtInRegion(rgn, point.x, point.y)) {
+		hitResult = hitDrag;
+	}
+	else if (PtInRegion(m_rgn, point.x, point.y)) {
+		hitResult = hitMiddle;
+	}
+
+	::DeleteObject(rgn);
+	return hitResult;
+}
+
+BOOL CRealia::SetCursor(HWND pWnd, UINT nHitTest)
+{
+	// trackers should only be in client area
+	if (nHitTest != HTCLIENT)
+		return FALSE;
+
+	// convert cursor position to client co-ordinates
+	POINT point;
+	GetCursorPos(&point);
+	ScreenToClient(pWnd, &point);
+
+	// do hittest and normalize hit
+	int nHandle = HitTest(point);
+	if (nHandle < 0)
+		return FALSE;
+
+	assert(nHandle < _countof(_afxCursors));
+	::SetCursor(_afxCursors[nHandle]);
+	return TRUE;
+}
+
+BOOL CRealia::Track(HWND pWnd, POINT point, BOOL bAllowInvert,
+	HWND pWndClipTo)
+{
+	// perform hit testing on the handles
+	int nHandle = HitTest(point);
+	if (nHandle < 0)
+	{
+		// didn't hit a handle, so just return FALSE
+		return FALSE;
+	}
+
+	// otherwise, call helper function to do the tracking
+	m_bAllowInvert = bAllowInvert;
+	return TrackHandle(nHandle, pWnd, point, pWndClipTo);
+}
+
+BOOL CRealia::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
+{
+	// simply call helper function to track from bottom right handle
+	m_bAllowInvert = bAllowInvert;
+	m_ptBegin.x = m_ptEnd.x = point.x;
+	m_ptBegin.y = m_ptEnd.y = point.y;
+	m_rgn = CreateRectRgn(0, 0, 0, 0);
+	return TrackHandle(hitDrag, pWnd, point, NULL);
+}
+
+BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
+	HWND pWndClipTo)
+{
+	assert(nHandle >= 0);
+	assert(nHandle <= 9);
+
+	// don't handle if capture already set
+	if (::GetCapture() != NULL)
+		return FALSE;
+
+	//AfxLockTempMaps();  // protect maps while looping
+
+	assert(!m_bFinalErase);
+
+	// set capture to the window which received this message
+	SetCapture(pWnd);
+	assert(pWnd == GetCapture());
+	UpdateWindow(pWnd);
+	if (pWndClipTo != NULL)
+		UpdateWindow(pWndClipTo);
+	POINT ptBeginSave, ptEndSave;
+	ptBeginSave.x = m_ptBegin.x;
+	ptBeginSave.y = m_ptBegin.y;
+	ptEndSave.x = m_ptEnd.x;
+	ptEndSave.y = m_ptEnd.y;
+
+	// get DC for drawing
+	HDC pDrawDC;
+	if (pWndClipTo != NULL)
+	{
+		// clip to arbitrary window by using adjusted Window DC
+		pDrawDC = GetDCEx(pWndClipTo, NULL, DCX_CACHE);
+	}
+	else
+	{
+		// otherwise, just use normal DC
+		pDrawDC = GetDC(pWnd);
+	}
+	//assert_VALID(pDrawDC);
+
+	POINT ptBeginOld, ptEndOld;
+	BOOL bMoved = FALSE;
+	POINT ptLast;
+
+	// get messages until capture lost or cancelled/accepted
+	for (;;)
+	{
+		MSG msg;
+		assert(::GetMessage(&msg, NULL, 0, 0));
+
+		if (GetCapture() != pWnd)
+			break;
+
+		switch (msg.message)
+		{
+			// handle movement/accept messages
+		case WM_LBUTTONUP:
+		case WM_MOUSEMOVE:
+			EqualPoint(&ptBeginOld, &m_ptBegin);//ptBeginOld = m_ptBegin;
+			EqualPoint(&ptEndOld, &m_ptEnd);//ptEndOld = m_ptEnd;
+
+			ptLast = { GET_X_LPARAM(msg.lParam), GET_Y_LPARAM(msg.lParam) };
+			ModifyPointers(nHandle, ptBeginSave, ptEndSave, point, ptLast);
+			AdjustRgn(nHandle, m_ptBegin, m_ptEnd);
+
+			// only redraw and callback if the rect actually changed!
+			m_bFinalErase = (msg.message == WM_LBUTTONUP);
+			if (!IsPointEqual(ptBeginOld, m_ptBegin) || !IsPointEqual(ptEndOld, m_ptEnd) || m_bFinalErase)
+			{
+				if (bMoved)
+				{
+					m_bErase = TRUE;
+					//DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
+				}
+				//OnChangedRect(rectOld);
+				if (msg.message != WM_LBUTTONUP)
+					bMoved = TRUE;
+			}
+			if (m_bFinalErase)
+				goto ExitLoop;
+
+			if (!IsPointEqual(ptBeginOld, m_ptBegin) || !IsPointEqual(ptEndOld, m_ptEnd))
+			{
+				m_bErase = FALSE;
+				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+			}
+			InvalidateRect(pWnd, NULL, false);
+			break;
+
+			// handle cancel messages
+		case WM_KEYDOWN:
+			if (msg.wParam != VK_ESCAPE)
+				break;
+		case WM_RBUTTONDOWN:
+			if (bMoved)
+			{
+				m_bErase = m_bFinalErase = TRUE;
+				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+			}
+			EqualPoint(&m_ptBegin, &ptBeginSave);//m_ptBegin = ptBeginSave;
+			EqualPoint(&m_ptEnd, &ptEndSave);//m_ptEnd = ptEndSave;
+			goto ExitLoop;
+
+			// just dispatch rest of the messages
+		default:
+			DispatchMessage(&msg);
 			break;
 		}
 	}
+
+ExitLoop:
+	if (pWndClipTo != NULL)
+		ReleaseDC(pWndClipTo, pDrawDC);
+	else
+		ReleaseDC(pWnd, pDrawDC);
+	ReleaseCapture();
+
+	//AfxUnlockTempMaps(FALSE);
+
+	// restore rect in case bMoved is still FALSE
+	if (!bMoved) {
+		EqualPoint(&m_ptBegin, &ptBeginSave);//m_ptBegin = ptBeginSave;
+		EqualPoint(&m_ptEnd, &ptEndSave);//m_ptEnd = ptEndSave;
+	}
+	m_bFinalErase = FALSE;
+	m_bErase = FALSE;
+
+	// return TRUE only if rect has changed
+	return !IsPointEqual(ptBeginSave, m_ptBegin) || !IsPointEqual(ptEndSave, m_ptEnd);
 }
-void CRealiaWnd::OnLButtonUp(POINT pt)
-{
 
+BOOL CRealia::IsRegionNull() const
+{
+	return IsPointEqual(m_ptBegin, m_ptEnd);
 }
 
-void CRealiaWnd::OnMouseMove(POINT pt)
+void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, POINT ptDown, POINT ptLast)
 {
+	assert(nHandle >= 0);
+	assert(nHandle <= 9);
 
-}
+	if (nHandle == hitMiddle) {//移动区域
+		m_ptBegin.x = ptBeginSave.x + ptLast.x - ptDown.x;
+		m_ptBegin.y = ptBeginSave.y + ptLast.y - ptDown.y;
+		m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
+		m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
+	}
 
-BOOL CRealiaWnd::OnSetCursor(HWND pWnd, UINT nHitTest)
-{
-	for (int i = 0; i < 10; i++) {
-		if (!m_RectTracker[i].IsRegionNull()) {
-			if (m_RectTracker[i].SetCursor(m_hWnd, nHitTest))
-			{
-				return FALSE;
+	if (nHandle == hitDrag) {
+		if (ptBeginSave.x == ptEndSave.x && ptBeginSave.y == ptEndSave.y) {//首次画
+			m_ptBegin = ptBeginSave;
+			m_ptEnd = ptLast;
+		}
+		else {//拉伸区域
+			if (ptLast.x < ptBeginSave.x) {
+				m_ptBegin = ptLast;
+				m_ptEnd = ptBeginSave;
+			}
+			else {
+				m_ptBegin = ptBeginSave;
+				m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
+				m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
 			}
 		}
 	}
-	SetCursor(LoadCursor(NULL, IDC_ARROW));
-	return true;
+
+	if (m_ptBegin.x > m_ptEnd.x) {
+		LONG tmp = m_ptBegin.x;
+		m_ptBegin.x = m_ptEnd.x;
+		m_ptEnd.x = tmp;
+		tmp = m_ptBegin.y;
+		m_ptBegin.y = m_ptEnd.y;
+		m_ptEnd.y = tmp;
+	}
 }
 
-void CRealiaWnd::DrawBackground(HDC dc, RECT rc)
+void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 {
-	HBRUSH hbrush = CreateSolidBrush(RGB(255, 255, 255));
-	HBRUSH oldhbrush = (HBRUSH)SelectObject(dc, hbrush);
+	if (m_nStyle == CRealia::Ruler) {
+		POINT pt1, pt2, pt3, pt4;
+		pt1.x = ptBegin.x;
+		pt1.y = ptBegin.y;
+		pt2.x = ptEnd.x;
+		pt2.y = ptEnd.y;
+		double px = pt2.x - pt1.x;
+		double py = pt2.y - pt1.y;
+		double pl = sqrt(px * px + py * py);
+		double theta = atan(py / px);
+		pt3.x = pt2.x - m_iHeight * sin(theta);
+		pt3.y = pt2.y + m_iHeight * cos(theta);
+		pt4.x = pt1.x - m_iHeight * sin(theta);
+		pt4.y = pt1.y + m_iHeight * cos(theta);
+		POINT pts[4];
+		EqualPoint(&pts[0], &pt1);//pts[0] = pt1;
+		EqualPoint(&pts[1], &pt2);//pts[1] = pt2;
+		EqualPoint(&pts[2], &pt3);//pts[2] = pt3;
+		EqualPoint(&pts[3], &pt4);//pts[3] = pt4;
+		m_rgn = CreatePolygonRgn(pts, 4, WINDING);
+	}
+	else if (m_nStyle == CRealia::Protractor) {
+		POINT pt1, pt2, pt3, pt4;
+		pt1.x = ptBegin.x;
+		pt1.y = ptBegin.y;
+		pt2.x = ptEnd.x;
+		pt2.y = ptEnd.y;
+		double px = pt2.x - pt1.x;
+		double py = pt2.y - pt1.y;
+		double pl = sqrt(px * px + py * py);
+		double theta = atan(py / px);
+		pt3.x = pt2.x - m_iHeight * sin(theta);
+		pt3.y = pt2.y + m_iHeight * cos(theta);
+		pt4.x = pt1.x - m_iHeight * sin(theta);
+		pt4.y = pt1.y + m_iHeight * cos(theta);
+		POINT pts[4];
+		EqualPoint(&pts[0], &pt1);//pts[0] = pt1;
+		EqualPoint(&pts[1], &pt2);//pts[1] = pt2;
+		EqualPoint(&pts[2], &pt3);//pts[2] = pt3;
+		EqualPoint(&pts[3], &pt4);//pts[3] = pt4;
+		HRGN rgnRect2 = CreatePolygonRgn(pts, 4, WINDING);
 
-	FillRect(dc, &rc, hbrush);
+		double r = sqrt(px * px + py * py) / 2;
+		POINT ptCenter = { (pt1.x + pt2.x) / 2, (pt1.y + pt2.y) / 2 };//圆心坐标
+		//计算圆的外接正方形的左上角和右下角的坐标
+		POINT ptLeftTop, ptRightBottom;
+		ptLeftTop.x = ptCenter.x - r;
+		ptLeftTop.y = ptCenter.y - r;
+		ptRightBottom.x = ptCenter.x + r;
+		ptRightBottom.y = ptCenter.y + r;
+		HRGN rgnCircle = CreateEllipticRgn(ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y);
 
-	SelectObject(dc, oldhbrush);
-	::DeleteObject(hbrush);
-	::DeleteObject(oldhbrush);
+		POINT pt5, pt6;
+		pt5.x = pt2.x + r * sin(theta);
+		pt5.y = pt2.y - r * cos(theta);
+		pt6.x = pt1.x + r * sin(theta);
+		pt6.y = pt1.y - r * cos(theta);
+		EqualPoint(&pts[2], &pt5);
+		EqualPoint(&pts[3], &pt6);
+		HRGN rgnRect1 = CreatePolygonRgn(pts, 4, WINDING);
+
+		//圆和上矩形交集为上半圆
+		HRGN rgnHalfCircle = CreateRectRgn(0, 0, 0, 0);
+		CombineRgn(rgnHalfCircle, rgnCircle, rgnRect1, RGN_AND);
+		//上半圆和下矩形合并为圆规的区域
+		CombineRgn(m_rgn, rgnHalfCircle, rgnRect2, RGN_OR);
+
+		DeleteObject(rgnCircle);
+		DeleteObject(rgnHalfCircle);
+		DeleteObject(rgnRect1);
+		DeleteObject(rgnRect2);
+	}
 }
 
 //画直尺：5像素为1毫米，固定直尺总宽度为60像素
 //普通刻度10像素长，5的倍数20像素长，10的倍数25像素长
-void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight)
+void CRealia::DrawRuler(HDC dc, POINT pt1, POINT pt2, int iHeight) const
 {
-	if (pt1.x > pt2.x) {
-		LONG tmp = pt1.x;
-		pt1.x = pt2.x;
-		pt2.x = tmp;
-		tmp = pt1.y;
-		pt1.y = pt2.y;
-		pt2.y = tmp;
-	}
-
 	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 	HPEN oldpen = (HPEN)SelectObject(dc, pen);
 
@@ -149,6 +482,8 @@ void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight)
 	LineTo(dc, pt3.x, pt3.y);
 	LineTo(dc, pt4.x, pt4.y);
 	LineTo(dc, pt1.x, pt1.y - 1);
+
+	Ellipse(dc, pt2.x - 5, pt2.y - 5, pt2.x + 5, pt2.y + 5);
 
 	pen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
 	SelectObject(dc, pen);
@@ -204,7 +539,7 @@ void CRealiaWnd::DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight)
 
 //画量角器
 //普通刻度10像素长，5的倍数20像素长，10的倍数25像素长
-void CRealiaWnd::DrawProtractor(HDC dc, POINT pt1, POINT pt2)
+void CRealia::DrawProtractor(HDC dc, POINT pt1, POINT pt2) const
 {
 	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 	HPEN oldpen = (HPEN)SelectObject(dc, pen);

@@ -3,16 +3,16 @@
 #include "stdafx.h"
 #include "Realia.h"
 
-class CRuler : public CRealia
+class CProtractor : public CRealia
 {
 public:
-	CRuler();
-	CRuler(UINT iHeight);
+	CProtractor();
+	CProtractor(UINT iHeight);
 
 	virtual int HitTest(POINT pt) const;
-	
+
 public:
-	virtual ~CRuler();
+	virtual ~CProtractor();
 
 protected:
 	int m_iHeight;

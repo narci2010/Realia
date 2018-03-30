@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <math.h>
+#include <assert.h>
 
 #ifndef GET_X_LPARAM
 #define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))
