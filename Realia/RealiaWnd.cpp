@@ -49,8 +49,7 @@ void CRealiaWnd::OnPaint(HDC pDc)
 
 void CRealiaWnd::OnLButtonDown(POINT pt)
 {
-	int i = 0;
-	for (i = 0; i < m_vecRealias.size(); i++) {
+	for (int i = 0; i < m_vecRealias.size(); i++) {
 		if (!m_vecRealias.at(i).IsRegionNull()) {
 			int nHitTest = m_vecRealias.at(i).HitTest(pt);
 			if (nHitTest >= 0 && nHitTest <= 9) {

@@ -122,8 +122,9 @@ void CRealia::Draw(HDC pDC) const
 	if (IsRegionNull())
 		return;
 	// set initial DC state
-	assert(SaveDC(pDC) != 0);
-	SetMapMode(pDC, MM_TEXT);
+	//如果传进来的是内存DC，SaveDC可能会出问题
+	//assert(SaveDC(pDC) != 0);
+	//SetMapMode(pDC, MM_TEXT);
 	//pDC->SetViewportOrg(0, 0);
 	//pDC->SetWindowOrg(0, 0);
 
@@ -135,7 +136,7 @@ void CRealia::Draw(HDC pDC) const
 		DrawProtractor(pDC, m_ptBegin, m_ptEnd);
 	}
 
-	assert(RestoreDC(pDC, -1));
+	//assert(RestoreDC(pDC, -1));
 }
 
 int CRealia::HitTest(POINT point)

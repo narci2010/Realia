@@ -125,7 +125,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		hdc = BeginPaint(hWnd, &ps);
 		// TODO: 在此添加任意绘图代码...
 
+		SaveDC(hdc);
 		m_CRealiaWnd.OnPaint(hdc);
+		RestoreDC(hdc, -1);
 
 		EndPaint(hWnd, &ps);
 		break;
