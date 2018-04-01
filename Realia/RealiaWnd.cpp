@@ -6,6 +6,7 @@ CRealiaWnd::CRealiaWnd()
 	::ZeroMemory(&m_rcWindow, sizeof(m_rcWindow));
 	m_lWndWidth = 0;
 	m_lWndHeight = 0;
+	m_vecRealias.reserve(30);
 }
 
 CRealiaWnd::~CRealiaWnd()
@@ -62,8 +63,26 @@ void CRealiaWnd::OnLButtonDown(POINT pt)
 	if (m_iRealiaType >= 1 && m_iRealiaType <= 6) {
 		CRealia pRealia(pt, pt, m_iRealiaType);
 		m_vecRealias.push_back(pRealia);
+		//LPVOID lpMsgBuf;
+		//FormatMessage(
+		//	FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		//	FORMAT_MESSAGE_FROM_SYSTEM |
+		//	FORMAT_MESSAGE_IGNORE_INSERTS,
+		//	NULL,
+		//	GetLastError(),
+		//	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+		//	(LPTSTR)&lpMsgBuf,
+		//	0,
+		//	NULL
+		//);
+		//TCHAR msg[MAX_PATH];
+		//wsprintf(msg, _T("vector%d:"), m_vecRealias.size());
+		//OutputDebugString(msg);
+		//OutputDebugString((LPCTSTR)lpMsgBuf);
+		//LocalFree(lpMsgBuf);
 		m_vecRealias.at(m_vecRealias.size() - 1).TrackRubberBand(m_hWnd, pt, true);
 	}
+	return;
 }
 void CRealiaWnd::OnLButtonUp(POINT pt)
 {

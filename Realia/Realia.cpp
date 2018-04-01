@@ -202,7 +202,8 @@ BOOL CRealia::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
 	m_bAllowInvert = bAllowInvert;
 	m_ptBegin.x = m_ptEnd.x = point.x;
 	m_ptBegin.y = m_ptEnd.y = point.y;
-	m_rgn = CreateRectRgn(0, 0, 0, 0);
+	//m_rgn = CreateRectRgn(0, 0, 0, 0);
+	SetRectRgn(m_rgn, point.x, point.y, point.x, point.y);
 	return TrackHandle(hitDrag, pWnd, point, NULL);
 }
 
@@ -231,20 +232,6 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 	ptBeginSave.y = m_ptBegin.y;
 	ptEndSave.x = m_ptEnd.x;
 	ptEndSave.y = m_ptEnd.y;
-
-	// get DC for drawing
-	HDC pDrawDC;
-	if (pWndClipTo != NULL)
-	{
-		// clip to arbitrary window by using adjusted Window DC
-		pDrawDC = GetDCEx(pWndClipTo, NULL, DCX_CACHE);
-	}
-	else
-	{
-		// otherwise, just use normal DC
-		pDrawDC = GetDC(pWnd);
-	}
-	//assert_VALID(pDrawDC);
 
 	POINT ptBeginOld, ptEndOld;
 	BOOL bMoved = FALSE;
@@ -278,9 +265,9 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 				if (bMoved)
 				{
 					m_bErase = TRUE;
-					//DrawTrackerRect(&rectOld, pWndClipTo, pDrawDC, pWnd);
+					InvalidateRect(pWnd, NULL, false);
+					UpdateWindow(pWnd);
 				}
-				//OnChangedRect(rectOld);
 				if (msg.message != WM_LBUTTONUP)
 					bMoved = TRUE;
 			}
@@ -290,9 +277,9 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 			if (!IsPointEqual(ptBeginOld, m_ptBegin) || !IsPointEqual(ptEndOld, m_ptEnd))
 			{
 				m_bErase = FALSE;
-				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				//InvalidateRect(pWnd, NULL, false);
+				//UpdateWindow(pWnd);
 			}
-			InvalidateRect(pWnd, NULL, false);
 			break;
 
 			// handle cancel messages
@@ -303,7 +290,8 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 			if (bMoved)
 			{
 				m_bErase = m_bFinalErase = TRUE;
-				//DrawTrackerRect(&m_rect, pWndClipTo, pDrawDC, pWnd);
+				//InvalidateRect(pWnd, NULL, false);
+				//UpdateWindow(pWnd);
 			}
 			EqualPoint(&m_ptBegin, &ptBeginSave);//m_ptBegin = ptBeginSave;
 			EqualPoint(&m_ptEnd, &ptEndSave);//m_ptEnd = ptEndSave;
@@ -317,10 +305,6 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 	}
 
 ExitLoop:
-	if (pWndClipTo != NULL)
-		ReleaseDC(pWndClipTo, pDrawDC);
-	else
-		ReleaseDC(pWnd, pDrawDC);
 	ReleaseCapture();
 
 	//AfxUnlockTempMaps(FALSE);
@@ -403,6 +387,7 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 		EqualPoint(&pts[1], &pt2);//pts[1] = pt2;
 		EqualPoint(&pts[2], &pt3);//pts[2] = pt3;
 		EqualPoint(&pts[3], &pt4);//pts[3] = pt4;
+		DeleteObject(m_rgn);
 		m_rgn = CreatePolygonRgn(pts, 4, WINDING);
 	}
 	else if (m_nStyle == CRealia::Protractor) {

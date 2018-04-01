@@ -124,8 +124,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		hdc = BeginPaint(hWnd, &ps);
 		// TODO: 在此添加任意绘图代码...
+		LPVOID lpMsgBuf;
+		int last;
+		last = GetLastError();
+		FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			last,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+			(LPTSTR)&lpMsgBuf,
+			0,
+			NULL
+		);
+		OutputDebugString(_T("main"));
+		OutputDebugString((LPCTSTR)lpMsgBuf);
+		LocalFree(lpMsgBuf);
 
-		SaveDC(hdc);
+		assert(SaveDC(hdc) != 0);
 		m_CRealiaWnd.OnPaint(hdc);
 		RestoreDC(hdc, -1);
 
