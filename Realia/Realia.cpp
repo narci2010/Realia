@@ -6,9 +6,6 @@
 #define AFX_STATIC_DATA extern __declspec(selectany)
 
 AFX_STATIC_DATA HCURSOR _afxCursors[10] = { 0, };
-AFX_STATIC_DATA HBRUSH _afxHatchBrush = 0;
-AFX_STATIC_DATA HPEN _afxBlackDottedPen = 0;
-AFX_STATIC_DATA int _afxHandleSize = 0;
 
 CRealia::CRealia()
 {
@@ -17,8 +14,6 @@ CRealia::CRealia()
 
 CRealia::~CRealia()
 {
-	DeleteObject((HGDIOBJ*)&_afxHatchBrush);
-	DeleteObject((HGDIOBJ*)&_afxBlackDottedPen);
 	DeleteObject(m_rgn);
 }
 
@@ -33,6 +28,9 @@ CRealia::CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle)
 	if (m_nStyle == CRealia::Ruler) {
 		m_iHeight = 50;
 	}
+	else if (m_nStyle == CRealia::Protractor) {
+		m_iHeight = 50;
+	}
 }
 
 void CRealia::Construct()
@@ -42,50 +40,6 @@ void CRealia::Construct()
 	static BOOL bInitialized;
 	if (!bInitialized)
 	{
-
-		if (_afxHatchBrush == NULL)
-		{
-			// create the hatch pattern + bitmap
-			WORD hatchPattern[8];
-			WORD wPattern = 0x1111;
-			for (int i = 0; i < 4; i++)
-			{
-				hatchPattern[i] = wPattern;
-				hatchPattern[i + 4] = wPattern;
-				wPattern <<= 1;
-			}
-			HBITMAP hatchBitmap = CreateBitmap(8, 8, 1, 1, hatchPattern);
-			if (hatchBitmap == NULL)
-			{
-				//AfxUnlockGlobals(CRIT_RECTTRACKER);
-				//AfxThrowResourceException();
-			}
-
-			// create black hatched brush
-			_afxHatchBrush = CreatePatternBrush(hatchBitmap);
-			DeleteObject(hatchBitmap);
-			if (_afxHatchBrush == NULL)
-			{
-				//AfxUnlockGlobals(CRIT_RECTTRACKER);
-				//AfxThrowResourceException();
-			}
-		}
-
-		if (_afxBlackDottedPen == NULL)
-		{
-			// create black dotted pen
-			_afxBlackDottedPen = CreatePen(PS_DOT, 0, RGB(0, 0, 0));
-			if (_afxBlackDottedPen == NULL)
-			{
-				//AfxUnlockGlobals(CRIT_RECTTRACKER);
-				//AfxThrowResourceException();
-			}
-		}
-
-		// Note: all track cursors must live in same module
-		//HINSTANCE hInst = AfxFindResourceHandle(
-		//	ATL_MAKEINTRESOURCE(AFX_IDC_TRACK4WAY), ATL_RT_GROUP_CURSOR);
-
 		// initialize the cursor array
 		_afxCursors[0] = ::LoadCursorW(NULL, IDC_SIZENWSE);
 		_afxCursors[1] = ::LoadCursorW(NULL, IDC_SIZENESW);
@@ -98,18 +52,11 @@ void CRealia::Construct()
 		_afxCursors[8] = ::LoadCursorW(NULL, IDC_SIZEALL);
 		_afxCursors[9] = ::LoadCursorW(NULL, IDC_CROSS);
 
-		// get default handle size from Windows profile setting
-		static const TCHAR szWindows[] = _T("windows");
-		static const TCHAR szInplaceBorderWidth[] =
-			_T("oleinplaceborderwidth");
-		_afxHandleSize = GetProfileInt(szWindows, szInplaceBorderWidth, 4);
 		bInitialized = TRUE;
 	}
 
 	m_nStyle = 0;
 	m_iHeight = 0;
-	//m_nHandleSize = _afxHandleSize;
-	//m_sizeMin.cy = m_sizeMin.cx = m_nHandleSize * 2;
 
 	m_rgn = CreateRectRgn(0, 0, 0, 0);
 	m_ptBegin = m_ptEnd = { 0, 0 };
@@ -434,7 +381,11 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 		HRGN rgnHalfCircle = CreateRectRgn(0, 0, 0, 0);
 		CombineRgn(rgnHalfCircle, rgnCircle, rgnRect1, RGN_AND);
 		//上半圆和下矩形合并为圆规的区域
-		CombineRgn(m_rgn, rgnHalfCircle, rgnRect2, RGN_OR);
+		DeleteObject(m_rgn);
+		m_rgn = CreateRectRgn(0, 0, 0, 0);
+		//组合区域相当于新建区域，经测试如果不先释放原区域，目标区域将为空
+		//具体还要看组合区域的源代码，这个只是当前状况的测试结果
+		int ret = CombineRgn(m_rgn, rgnHalfCircle, rgnRect2, RGN_OR);
 
 		DeleteObject(rgnCircle);
 		DeleteObject(rgnHalfCircle);
@@ -471,8 +422,8 @@ void CRealia::DrawRuler(HDC dc, POINT pt1, POINT pt2, int iHeight) const
 
 	Ellipse(dc, pt2.x - 5, pt2.y - 5, pt2.x + 5, pt2.y + 5);
 
-	pen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
-	SelectObject(dc, pen);
+	HPEN pen2 = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+	SelectObject(dc, pen2);
 
 	//12号微软雅黑字体
 	HFONT hFont = CreateFont(
@@ -520,6 +471,7 @@ void CRealia::DrawRuler(HDC dc, POINT pt1, POINT pt2, int iHeight) const
 	::DeleteObject(oldbrush);
 	SelectObject(dc, oldpen);
 	::DeleteObject(pen);
+	::DeleteObject(pen2);
 	::DeleteObject(oldpen);
 }
 
@@ -553,8 +505,8 @@ void CRealia::DrawProtractor(HDC dc, POINT pt1, POINT pt2) const
 	//画量角器下面的直尺
 	DrawRuler(dc, pt1, pt2);
 
-	pen = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
-	SelectObject(dc, pen);
+	HPEN pen2 = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+	SelectObject(dc, pen2);
 
 	//12号微软雅黑字体
 	HFONT hFont = CreateFont(
@@ -601,5 +553,6 @@ void CRealia::DrawProtractor(HDC dc, POINT pt1, POINT pt2) const
 	::DeleteObject(oldbrush);
 	SelectObject(dc, oldpen);
 	::DeleteObject(pen);
+	::DeleteObject(pen2);
 	::DeleteObject(oldpen);
 }
