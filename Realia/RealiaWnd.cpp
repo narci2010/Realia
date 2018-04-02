@@ -118,7 +118,7 @@ UINT CRealiaWnd::DeleteRealia()
 	//}
 	for (std::vector<CRealia>::iterator it = m_vecRealias.begin(); it != m_vecRealias.end(); it++) {
 		if (it->m_bSelect == TRUE) {
-			//此处erase存在问题，它会把最后一个对象的m_rgn给释放掉
+			//此处erase存在问题，它总是把最后一个对象的m_rgn给释放掉，所以改为这里手动释放，不在析构函数中释放
 			DeleteObject(it->m_rgn);
 			m_vecRealias.erase(it);
 			InvalidateRect(m_hWnd, NULL, false);

@@ -61,7 +61,6 @@ public:
 
 protected:
 	BOOL m_bAllowInvert;
-	BOOL m_bFinalErase;
 	UINT m_iHeight;//用于直尺的高度
 	UINT m_iAngle;//用于画三角形时的角度，如30°,45°,60°
 
@@ -75,4 +74,5 @@ private:
 	void DrawTriangle(HDC dc, POINT pt1, POINT pt2, int angle) const;
 	void DrawProtractor(HDC dc, POINT pt1, POINT pt2) const;
 	void DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const;
+	void DrawCompass(HDC dc, POINT pt1, POINT pt2, int angle) const;
 };

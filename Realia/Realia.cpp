@@ -40,6 +40,10 @@ CRealia::CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle)
 	else if (m_nStyle == CRealia::Protractor) {
 		m_iHeight = 50;
 	}
+	else if (m_nStyle == CRealia::Compass) {
+		m_iAngle = 45;
+		m_iHeight = 300;
+	}
 }
 
 CRealia::CRealia(const CRealia &other)
@@ -56,7 +60,6 @@ CRealia::CRealia(const CRealia &other)
 	m_ptTmp.y = other.m_ptTmp.y;
 	m_bSelect = other.m_bSelect;
 	m_bAllowInvert = other.m_bAllowInvert;
-	m_bFinalErase = other.m_bFinalErase;
 	m_iHeight = other.m_iHeight;
 	m_iAngle = other.m_iAngle;
 }
@@ -89,7 +92,6 @@ void CRealia::Construct()
 
 	m_rgn = CreateRectRgn(0, 0, 0, 0);
 	m_ptBegin = m_ptEnd = m_ptTmp = { 0, 0 };
-	m_bFinalErase = FALSE;
 	m_bSelect = FALSE;
 }
 
@@ -120,6 +122,9 @@ void CRealia::Draw(HDC pDC) const
 	else if (m_nStyle == CRealia::Goniometer) {
 		DrawGoniometer(pDC, m_ptBegin, m_ptEnd, m_ptTmp);
 	}
+	else if (m_nStyle == CRealia::Compass) {
+		DrawCompass(pDC, m_ptBegin, m_ptEnd, m_iAngle);
+	}
 
 	//assert(RestoreDC(pDC, -1));
 }
@@ -128,12 +133,20 @@ int CRealia::HitTest(POINT point)
 {
 	TrackerHit hitResult = hitNothing;
 
-	assert(m_ptBegin.x <= m_ptEnd.x);
-
 	//AdjustRgn(0, m_ptBegin, m_ptEnd);
 
 	HRGN rgn = CreateEllipticRgn(m_ptEnd.x - rDrag, m_ptEnd.y - rDrag, m_ptEnd.x + rDrag, m_ptEnd.y + rDrag);
-	if (PtInRegion(rgn, point.x, point.y)) {
+	if (m_nStyle == CRealia::Goniometer) {
+		HRGN rgn2 = CreateEllipticRgn(m_ptBegin.x - rDrag, m_ptBegin.y - rDrag, m_ptBegin.x + rDrag, m_ptBegin.y + rDrag);
+		if (PtInRegion(rgn, point.x, point.y))
+			hitResult = hitTopRight;
+		else if (PtInRegion(rgn2, point.x, point.y))
+			hitResult = hitTopLeft;
+		else if (PtInRegion(m_rgn, point.x, point.y))
+			hitResult = hitMiddle;
+		::DeleteObject(rgn2);
+	}
+	else if (PtInRegion(rgn, point.x, point.y)) {
 		hitResult = hitDrag;
 	}
 	else if (PtInRegion(m_rgn, point.x, point.y)) {
@@ -189,7 +202,10 @@ BOOL CRealia::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
 	m_ptBegin.y = m_ptEnd.y = point.y;
 	//m_rgn = CreateRectRgn(0, 0, 0, 0);
 	SetRectRgn(m_rgn, point.x, point.y, point.x, point.y);
-	return TrackHandle(hitDrag, pWnd, point, NULL);
+	int nHandle = hitDrag;
+	if (m_nStyle == CRealia::Goniometer)
+		nHandle = hitTopLeft;
+	return TrackHandle(nHandle, pWnd, point, NULL);
 }
 
 BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
@@ -203,8 +219,6 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 		return FALSE;
 
 	//AfxLockTempMaps();  // protect maps while looping
-
-	assert(!m_bFinalErase);
 
 	// set capture to the window which received this message
 	SetCapture(pWnd);
@@ -247,6 +261,7 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 			if (m_nStyle == CRealia::Goniometer) {
 				++lBtnCount;
 				EqualPoint(&m_ptTmp, &m_ptEnd);
+				nHandle = hitTopRight;
 			}
 
 			break;
@@ -275,7 +290,6 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 		case WM_RBUTTONDOWN:
 			if (bMoved)
 			{
-				m_bFinalErase = TRUE;
 				InvalidateRect(pWnd, NULL, false);
 				UpdateWindow(pWnd);
 			}
@@ -298,7 +312,6 @@ ExitLoop:
 		EqualPoint(&m_ptBegin, &ptBeginSave);//m_ptBegin = ptBeginSave;
 		EqualPoint(&m_ptEnd, &ptEndSave);//m_ptEnd = ptEndSave;
 	}
-	m_bFinalErase = FALSE;
 
 	// return TRUE only if rect has changed
 	return !IsPointEqual(ptBeginSave, m_ptBegin) || !IsPointEqual(ptEndSave, m_ptEnd);
@@ -314,15 +327,35 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 	assert(nHandle >= 0);
 	assert(nHandle <= 9);
 
+	if (m_nStyle == CRealia::Goniometer) {
+		if (nHandle == hitTopLeft) {
+			if (ptTmpSave.x == 0 && ptTmpSave.y == 0) {//首次画
+				m_ptBegin = ptBeginSave;
+				m_ptEnd = ptLast;
+			}
+			else {
+				m_ptBegin = ptLast;
+			}
+		}
+		else if (nHandle == hitTopRight) {
+			m_ptEnd = ptLast;
+		}
+		else if (nHandle == hitMiddle) {
+			m_ptBegin.x = ptBeginSave.x + ptLast.x - ptDown.x;
+			m_ptBegin.y = ptBeginSave.y + ptLast.y - ptDown.y;
+			m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
+			m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
+			m_ptTmp.x = ptTmpSave.x + ptLast.x - ptDown.x;
+			m_ptTmp.y = ptTmpSave.y + ptLast.y - ptDown.y;
+		}
+		return;
+	}
+
 	if (nHandle == hitMiddle) {//移动区域
 		m_ptBegin.x = ptBeginSave.x + ptLast.x - ptDown.x;
 		m_ptBegin.y = ptBeginSave.y + ptLast.y - ptDown.y;
 		m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
 		m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
-		if (m_ptTmp.x != 0 || m_ptTmp.y != 0) {
-			m_ptTmp.x = ptTmpSave.x + ptLast.x - ptDown.x;
-			m_ptTmp.y = ptTmpSave.y + ptLast.y - ptDown.y;
-		}
 	}
 
 	if (nHandle == hitDrag) {
@@ -760,6 +793,7 @@ void CRealia::DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const
 		LONG pxBC = abs(pt2.x - pt1.x);
 		LONG pyBC = abs(pt2.y - pt1.y);
 		double a = sqrt(pxBC * pxBC + pyBC * pyBC);
+		if (2 * b * c == 0) return;
 		double theta = acos((b * b + c * c - a * a) / (2 * b * c));
 		int angle = theta * 180 / pi;
 
@@ -793,12 +827,44 @@ void CRealia::DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const
 
 		TCHAR mark[8];
 		wsprintf(mark, _T("%d°"), angle);
-		TextOut(dc, pt3.x, pt3.y - 5, mark, lstrlen(mark));
+		TextOut(dc, pt3.x, pt3.y, mark, lstrlen(mark));
 
 		SelectObject(dc, oldfont);
 		::DeleteObject(hFont);
 		::DeleteObject(oldfont);
 	}
+
+	SelectObject(dc, oldbrush);
+	::DeleteObject(hbrush);
+	::DeleteObject(oldbrush);
+	SelectObject(dc, oldpen);
+	::DeleteObject(pen);
+	::DeleteObject(oldpen);
+}
+
+//画圆规
+//以m_ptBegin为轴心点转动，m_ptEnd经过的路线即为圆规画出来的图形
+void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int angle) const
+{
+	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+
+	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
+
+	//求顶点（圆规的头）坐标
+	POINT pt3;
+	double px = pt2.x - pt1.x;
+	double py = pt2.y - pt1.y;
+	double pl = sqrt(px * px + py * py);
+	double theta1 = acos((pl * pl) / (2 * pl * m_iHeight));
+	double theta2 = atan(py / px);
+	pt3.x = pt1.x + m_iHeight * cos(theta1 - theta2);
+	pt3.y = pt1.y - m_iHeight * sin(theta1 - theta2);
+
+	MoveToEx(dc, pt1.x, pt1.y, NULL);
+	LineTo(dc, pt3.x, pt3.y);
+	LineTo(dc, pt2.x, pt2.y);
 
 	SelectObject(dc, oldbrush);
 	::DeleteObject(hbrush);
