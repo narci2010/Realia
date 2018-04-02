@@ -6,11 +6,14 @@ CRealiaWnd::CRealiaWnd()
 	::ZeroMemory(&m_rcWindow, sizeof(m_rcWindow));
 	m_lWndWidth = 0;
 	m_lWndHeight = 0;
-	m_vecRealias.reserve(10);
+	m_vecRealias.reserve(30);
 }
 
 CRealiaWnd::~CRealiaWnd()
 {
+	for (std::vector<CRealia>::iterator it = m_vecRealias.begin(); it != m_vecRealias.end(); it++) {
+		DeleteObject(it->m_rgn);
+	}
 	m_vecRealias.clear();
 }
 
@@ -51,9 +54,14 @@ void CRealiaWnd::OnPaint(HDC pDc)
 void CRealiaWnd::OnLButtonDown(POINT pt)
 {
 	for (int i = 0; i < m_vecRealias.size(); i++) {
+		m_vecRealias.at(i).m_bSelect = FALSE;
+	}
+
+	for (int i = 0; i < m_vecRealias.size(); i++) {
 		if (!m_vecRealias.at(i).IsRegionNull()) {
 			int nHitTest = m_vecRealias.at(i).HitTest(pt);
 			if (nHitTest >= 0 && nHitTest <= 9) {
+				m_vecRealias.at(i).m_bSelect = TRUE;
 				m_vecRealias.at(i).Track(m_hWnd, pt);
 				return;
 			}
@@ -94,6 +102,32 @@ BOOL CRealiaWnd::OnSetCursor(HWND pWnd, UINT nHitTest)
 void CRealiaWnd::SetRealiaType(int nType)
 {
 	m_iRealiaType = nType;
+}
+
+UINT CRealiaWnd::DeleteRealia()
+{
+	UINT num = 0;
+	//for (int i = 0; i < m_vecRealias.size(); i++) {
+	//	if (m_vecRealias.at(i).m_bSelect == TRUE) {
+	//		m_vecRealias.erase(m_vecRealias.begin() + i);
+	//		InvalidateRect(m_hWnd, NULL, false);
+	//		UpdateWindow(m_hWnd);
+	//		++num;
+	//		break;
+	//	}
+	//}
+	for (std::vector<CRealia>::iterator it = m_vecRealias.begin(); it != m_vecRealias.end(); it++) {
+		if (it->m_bSelect == TRUE) {
+			//此处erase存在问题，它会把最后一个对象的m_rgn给释放掉
+			DeleteObject(it->m_rgn);
+			m_vecRealias.erase(it);
+			InvalidateRect(m_hWnd, NULL, false);
+			UpdateWindow(m_hWnd);
+			++num;
+			break;
+		}
+	}
+	return num;
 }
 
 void CRealiaWnd::DrawBackground(HDC dc, RECT rc)

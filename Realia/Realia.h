@@ -21,6 +21,7 @@ class CRealia
 public:
 	CRealia();
 	CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle);
+	CRealia(const CRealia &other);//拷贝构造函数
 
 	// Style Flags
 	enum StyleFlags
@@ -43,6 +44,8 @@ public:
 	HRGN m_rgn;
 	POINT m_ptBegin;
 	POINT m_ptEnd;
+	POINT m_ptTmp;//中间点，用于角度尺和圆规
+	BOOL m_bSelect;
 
 	void Draw(HDC pDC) const;
 	int HitTest(POINT pt);
@@ -58,16 +61,18 @@ public:
 
 protected:
 	BOOL m_bAllowInvert;
-	BOOL m_bErase;
 	BOOL m_bFinalErase;
-	UINT m_iHeight;
+	UINT m_iHeight;//用于直尺的高度
+	UINT m_iAngle;//用于画三角形时的角度，如30°,45°,60°
 
 	void Construct();
 	BOOL TrackHandle(int nHandle, HWND pWnd, POINT point, HWND pWndClipTo);
-	void ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, POINT ptDown, POINT ptLast);
+	void ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, POINT ptTmpSave, POINT ptDown, POINT ptLast);
 	void AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd);
 
 private:
 	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50) const;
+	void DrawTriangle(HDC dc, POINT pt1, POINT pt2, int angle) const;
 	void DrawProtractor(HDC dc, POINT pt1, POINT pt2) const;
+	void DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const;
 };

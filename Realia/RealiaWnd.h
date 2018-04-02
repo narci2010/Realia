@@ -16,6 +16,7 @@ public:
 	void OnMouseMove(POINT pt);
 	BOOL OnSetCursor(HWND pWnd, UINT nHitTest);
 	void SetRealiaType(int nType);
+	UINT DeleteRealia();//删除选中的图形，返回删除的个数
 
 private:
 	HWND m_hWnd;
@@ -24,9 +25,9 @@ private:
 	LONG m_lWndWidth;//窗口宽度
 	LONG m_lWndHeight;//窗口高度
 
-	std::vector<CRealia> m_vecRealias;
-
 	int m_iRealiaType;//教具类型
+
+	std::vector<CRealia> m_vecRealias;//存放所画的全部教具
 
 	void DrawBackground(HDC dc, RECT rc);//画背景
 };
