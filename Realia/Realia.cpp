@@ -11,6 +11,9 @@ AFX_STATIC_DATA UINT rDrag = 5;//用于伸缩区的半径
 AFX_STATIC_DATA UINT rGoniometer = 30;//用于角度尺的半径
 AFX_STATIC_DATA UINT lCompass = 200;//用于圆规的腿长
 
+std::vector<CArc> m_vecArcs;
+CArc *m_pArc = NULL;
+
 CRealia::CRealia()
 {
 	Construct();
@@ -127,6 +130,8 @@ void CRealia::Draw(HDC pDC)
 		DrawCompass(pDC, m_ptBegin, m_ptEnd, m_iHeight);
 	}
 
+	DrawArc(pDC);
+
 	//assert(RestoreDC(pDC, -1));
 }
 
@@ -224,6 +229,11 @@ BOOL CRealia::Track(HWND pWnd, POINT point, BOOL bAllowInvert,
 
 	// otherwise, call helper function to do the tracking
 	m_bAllowInvert = bAllowInvert;
+
+	if (m_nStyle == CRealia::Compass && nHandle == hitTop) {
+		m_pArc = new CArc(m_ptBegin, DistanceOfTwoPoint(m_ptBegin, m_ptEnd));
+		m_vecArcs.push_back(*m_pArc);
+	}
 	return TrackHandle(nHandle, pWnd, point, pWndClipTo);
 }
 
@@ -287,6 +297,11 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 		{
 			// handle movement/accept messages
 		case WM_LBUTTONUP:
+			if (m_pArc != NULL) {
+				delete m_pArc;
+				m_pArc = NULL;
+			}
+
 			if (m_nStyle != CRealia::Goniometer)
 				goto ExitLoop;
 
@@ -394,7 +409,7 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 
 			double theta2 = dtheta2 - dtheta;
 
-			m_vecPoints.push_back(m_ptEnd);
+			m_vecArcs.at(m_vecArcs.size() - 1).m_vecPoints.push_back(m_ptEnd);
 
 			//求ptEndSave绕ptBeginSave旋转theta度后的坐标
 			if (ptLast.x - ptBeginSave.x >= 0) {
@@ -406,15 +421,7 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 				m_ptEnd.y = ptBeginSave.y - r * sin(theta + theta2);
 			}
 
-			m_vecPoints.push_back(m_ptEnd);
-
-			//画圆弧
-			POINT ptLeftTop, ptRightBottom;
-			ptLeftTop.x = ptBeginSave.x - r;
-			ptLeftTop.y = ptBeginSave.y - r;
-			ptRightBottom.x = ptBeginSave.x + r;
-			ptRightBottom.y = ptBeginSave.y + r;
-			//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
+			m_vecArcs.at(m_vecArcs.size() - 1).m_vecPoints.push_back(m_ptEnd);
 		}
 	}
 	else if (nHandle == hitMiddle) {//移动区域
@@ -1059,4 +1066,65 @@ void CRealia::GetCompassPoints(POINT pt1, POINT pt2, LPPOINT lppt3, LPPOINT lppt
 		lppt9->x = lppt7->x - iHeight2 * sin(theta2);
 		lppt9->y = lppt7->y + iHeight2 * cos(theta2);
 	}
+}
+
+//画圆弧
+void CRealia::DrawArc(HDC dc)
+{
+	if (m_vecArcs.size() <= 0)
+		return;
+
+	const int iWidth = 30;
+	const int iHeight2 = 50;
+	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+
+	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
+
+	POINT ptLeftTop, ptRightBottom, pt1, pt2;
+	double px1, px2, py1, py2, theta1, theta2;
+	for (std::vector<CArc>::iterator it = m_vecArcs.begin(); it != m_vecArcs.end(); it++) {
+		ptLeftTop.x = it->m_ptCenter.x - it->m_iRadius;
+		ptLeftTop.y = it->m_ptCenter.y - it->m_iRadius;
+		ptRightBottom.x = it->m_ptCenter.x + it->m_iRadius;
+		ptRightBottom.y = it->m_ptCenter.y + it->m_iRadius;
+		for (std::vector<POINT>::iterator lppt = it->m_vecPoints.begin(); lppt != it->m_vecPoints.end(); lppt++) {
+			EqualPoint(&pt1, &(*lppt));
+			EqualPoint(&pt2, &(*(++lppt)));
+			//圆弧函数只能逆时针画，所以处理麻烦，而且一旦两点很近就会出现两种情况，什么都没有或者画了整个圆
+			px1 = pt1.x - it->m_ptCenter.x;
+			py1 = pt1.y - it->m_ptCenter.y;
+			if (px1 == 0) {
+				theta1 = pi / 2;
+			}
+			else {
+				theta1 = atan(py1 / px1);
+			}
+
+			px2 = pt2.x - it->m_ptCenter.x;
+			py2 = pt2.y - it->m_ptCenter.y;
+			if (px2 == 0) {
+				theta2 = pi / 2;
+			}
+			else {
+				theta2 = atan(py2 / px2);
+			}
+
+			if ((theta2 - theta1 > 0 && theta2 - theta1 < pi / 2) || theta2 - theta1 <= - pi / 2) {
+				Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
+			}
+			else if ((theta2 - theta1 < 0 && theta2 - theta1 > -pi / 2) || theta2 - theta1 >= pi / 2) {
+				Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt1.x, pt1.y, pt2.x, pt2.y);
+			}
+			//SetPixel(dc, lppt->x, lppt->y, RGB(0, 0, 255));
+		}
+	}
+
+	SelectObject(dc, oldbrush);
+	::DeleteObject(hbrush);
+	::DeleteObject(oldbrush);
+	SelectObject(dc, oldpen);
+	::DeleteObject(pen);
+	::DeleteObject(oldpen);
 }

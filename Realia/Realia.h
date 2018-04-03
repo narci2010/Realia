@@ -74,7 +74,6 @@ protected:
 	BOOL m_bAllowInvert;
 	UINT m_iHeight;//用于直尺的高度
 	UINT m_iAngle;//用于画三角形时的角度，如30°,45°,60°
-	std::vector<POINT> m_vecPoints;
 
 	void Construct();
 	BOOL TrackHandle(int nHandle, HWND pWnd, POINT point, HWND pWndClipTo);
@@ -88,6 +87,7 @@ private:
 	void DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const;
 	void DrawCompass(HDC dc, POINT pt1, POINT pt2, const int iHeight);
 	void GetCompassPoints(const POINT pt1, const POINT pt2, LPPOINT lppt3, LPPOINT lppt4, LPPOINT lppt5, LPPOINT lppt6, LPPOINT lppt7, LPPOINT lppt8, LPPOINT lppt9);
+	void DrawArc(HDC dc);
 };
 
 class CArc
