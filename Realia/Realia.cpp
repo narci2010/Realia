@@ -9,6 +9,7 @@ AFX_STATIC_DATA HCURSOR _afxCursors[10] = { 0, };
 AFX_STATIC_DATA double pi = 3.1415926;
 AFX_STATIC_DATA UINT rDrag = 5;//用于伸缩区的半径
 AFX_STATIC_DATA UINT rGoniometer = 30;//用于角度尺的半径
+AFX_STATIC_DATA UINT lCompass = 200;//用于圆规的腿长
 
 CRealia::CRealia()
 {
@@ -42,7 +43,7 @@ CRealia::CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle)
 	}
 	else if (m_nStyle == CRealia::Compass) {
 		m_iAngle = 45;
-		m_iHeight = 300;
+		m_iHeight = lCompass;
 	}
 }
 
@@ -76,7 +77,7 @@ void CRealia::Construct()
 		_afxCursors[1] = ::LoadCursorW(NULL, IDC_SIZENESW);
 		_afxCursors[2] = _afxCursors[0];
 		_afxCursors[3] = _afxCursors[1];
-		_afxCursors[4] = ::LoadCursorW(NULL, IDC_SIZENS);
+		_afxCursors[4] = ::LoadCursorW(NULL, IDC_CROSS); //::LoadCursorW(NULL, IDC_SIZENS);
 		_afxCursors[5] = ::LoadCursorW(NULL, IDC_SIZEWE);
 		_afxCursors[6] = _afxCursors[4];
 		_afxCursors[7] = _afxCursors[5];
@@ -95,7 +96,7 @@ void CRealia::Construct()
 	m_bSelect = FALSE;
 }
 
-void CRealia::Draw(HDC pDC) const
+void CRealia::Draw(HDC pDC)
 {
 	if (IsRegionNull())
 		return;
@@ -123,7 +124,7 @@ void CRealia::Draw(HDC pDC) const
 		DrawGoniometer(pDC, m_ptBegin, m_ptEnd, m_ptTmp);
 	}
 	else if (m_nStyle == CRealia::Compass) {
-		DrawCompass(pDC, m_ptBegin, m_ptEnd, m_iAngle);
+		DrawCompass(pDC, m_ptBegin, m_ptEnd, m_iHeight);
 	}
 
 	//assert(RestoreDC(pDC, -1));
@@ -145,6 +146,38 @@ int CRealia::HitTest(POINT point)
 		else if (PtInRegion(m_rgn, point.x, point.y))
 			hitResult = hitMiddle;
 		::DeleteObject(rgn2);
+	}
+	else if (m_nStyle == CRealia::Compass) {
+		if (PtInRegion(m_rgn, point.x, point.y)) {
+			hitResult = hitMiddle;
+		}
+		else {
+			POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
+			GetCompassPoints(m_ptBegin, m_ptEnd, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
+
+			POINT ptsRight[3], ptsTop[4];
+
+			EqualPoint(&ptsRight[0], &m_ptEnd);
+			EqualPoint(&ptsRight[1], &pt3);
+			EqualPoint(&ptsRight[2], &pt5);
+			HRGN rgnRight = CreatePolygonRgn(ptsRight, 3, WINDING);
+
+			EqualPoint(&ptsTop[0], &pt6);
+			EqualPoint(&ptsTop[1], &pt8);
+			EqualPoint(&ptsTop[2], &pt9);
+			EqualPoint(&ptsTop[3], &pt7);
+			HRGN rgnTop = CreatePolygonRgn(ptsTop, 4, WINDING);
+
+			if (PtInRegion(rgnRight, point.x, point.y)) {
+				hitResult = hitTopRight;
+			}
+			else if (PtInRegion(rgnTop, point.x, point.y)) {
+				hitResult = hitTop;
+			}
+
+			::DeleteObject(rgnRight);
+			::DeleteObject(rgnTop);
+		}
 	}
 	else if (PtInRegion(rgn, point.x, point.y)) {
 		hitResult = hitDrag;
@@ -205,6 +238,8 @@ BOOL CRealia::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
 	int nHandle = hitDrag;
 	if (m_nStyle == CRealia::Goniometer)
 		nHandle = hitTopLeft;
+	else if (m_nStyle == CRealia::Compass)
+		nHandle = hitTopRight;
 	return TrackHandle(nHandle, pWnd, point, NULL);
 }
 
@@ -327,38 +362,72 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 	assert(nHandle >= 0);
 	assert(nHandle <= 9);
 
-	if (m_nStyle == CRealia::Goniometer) {
-		if (nHandle == hitTopLeft) {
-			if (ptTmpSave.x == 0 && ptTmpSave.y == 0) {//首次画
-				m_ptBegin = ptBeginSave;
-				m_ptEnd = ptLast;
-			}
-			else {
-				m_ptBegin = ptLast;
-			}
-		}
-		else if (nHandle == hitTopRight) {
+	if (nHandle == hitTopLeft) {
+		if (ptBeginSave.x == ptEndSave.x && ptBeginSave.y == ptEndSave.y) {//首次画
+			m_ptBegin = ptBeginSave;
 			m_ptEnd = ptLast;
 		}
-		else if (nHandle == hitMiddle) {
+		else {
 			m_ptBegin.x = ptBeginSave.x + ptLast.x - ptDown.x;
 			m_ptBegin.y = ptBeginSave.y + ptLast.y - ptDown.y;
-			m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
-			m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
-			m_ptTmp.x = ptTmpSave.x + ptLast.x - ptDown.x;
-			m_ptTmp.y = ptTmpSave.y + ptLast.y - ptDown.y;
 		}
-		return;
 	}
+	else if (nHandle == hitTopRight) {
+		m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
+		m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
+	}
+	else if (nHandle == hitTop) {
+		if (m_nStyle == CRealia::Compass) {//圆规画圆弧
+			//已知圆心、半径和圆上一点坐标ptEndSave
+			double r = DistanceOfTwoPoint(ptBeginSave, ptEndSave);
+			double px = ptEndSave.x - ptBeginSave.x;
+			double py = ptEndSave.y - ptBeginSave.y;
+			double theta = atan(py / px);
 
-	if (nHandle == hitMiddle) {//移动区域
+			//求旋转角
+			double dx = ptDown.x - ptBeginSave.x;
+			double dy = ptDown.y - ptBeginSave.y;
+			double dtheta = atan(dy / dx);
+			double dx2 = ptLast.x - ptBeginSave.x;
+			double dy2 = ptLast.y - ptBeginSave.y;
+			double dtheta2 = atan(dy2 / dx2);
+
+			double theta2 = dtheta2 - dtheta;
+
+			m_vecPoints.push_back(m_ptEnd);
+
+			//求ptEndSave绕ptBeginSave旋转theta度后的坐标
+			if (ptLast.x - ptBeginSave.x >= 0) {
+				m_ptEnd.x = ptBeginSave.x + r * cos(theta + theta2);
+				m_ptEnd.y = ptBeginSave.y + r * sin(theta + theta2);
+			}
+			else {
+				m_ptEnd.x = ptBeginSave.x - r * cos(theta + theta2);
+				m_ptEnd.y = ptBeginSave.y - r * sin(theta + theta2);
+			}
+
+			m_vecPoints.push_back(m_ptEnd);
+
+			//画圆弧
+			POINT ptLeftTop, ptRightBottom;
+			ptLeftTop.x = ptBeginSave.x - r;
+			ptLeftTop.y = ptBeginSave.y - r;
+			ptRightBottom.x = ptBeginSave.x + r;
+			ptRightBottom.y = ptBeginSave.y + r;
+			//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
+		}
+	}
+	else if (nHandle == hitMiddle) {//移动区域
 		m_ptBegin.x = ptBeginSave.x + ptLast.x - ptDown.x;
 		m_ptBegin.y = ptBeginSave.y + ptLast.y - ptDown.y;
 		m_ptEnd.x = ptEndSave.x + ptLast.x - ptDown.x;
 		m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
+		if (m_nStyle == CRealia::Goniometer) {
+			m_ptTmp.x = ptTmpSave.x + ptLast.x - ptDown.x;
+			m_ptTmp.y = ptTmpSave.y + ptLast.y - ptDown.y;
+		}
 	}
-
-	if (nHandle == hitDrag) {
+	else if (nHandle == hitDrag) {
 		if (ptBeginSave.x == ptEndSave.x && ptBeginSave.y == ptEndSave.y) {//首次画
 			m_ptBegin = ptBeginSave;
 			m_ptEnd = ptLast;
@@ -374,15 +443,16 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 				m_ptEnd.y = ptEndSave.y + ptLast.y - ptDown.y;
 			}
 		}
-	}
 
-	if (m_ptBegin.x > m_ptEnd.x) {
-		LONG tmp = m_ptBegin.x;
-		m_ptBegin.x = m_ptEnd.x;
-		m_ptEnd.x = tmp;
-		tmp = m_ptBegin.y;
-		m_ptBegin.y = m_ptEnd.y;
-		m_ptEnd.y = tmp;
+		//保证m_ptBegin.x <= m_ptEnd.x
+		if (m_ptBegin.x > m_ptEnd.x) {
+			LONG tmp = m_ptBegin.x;
+			m_ptBegin.x = m_ptEnd.x;
+			m_ptEnd.x = tmp;
+			tmp = m_ptBegin.y;
+			m_ptBegin.y = m_ptEnd.y;
+			m_ptEnd.y = tmp;
+		}
 	}
 }
 
@@ -495,6 +565,18 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 			::DeleteObject(m_rgn);
 			m_rgn = CreateEllipticRgn(ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y);
 		}
+	}
+	else if (m_nStyle == CRealia::Compass) {
+		POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
+		GetCompassPoints(m_ptBegin, m_ptEnd, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
+
+		POINT pts[4];
+		EqualPoint(&pts[0], &m_ptBegin);
+		EqualPoint(&pts[1], &pt3);
+		EqualPoint(&pts[2], &pt5);
+		EqualPoint(&pts[3], &pt4);
+		::DeleteObject(m_rgn);
+		m_rgn = CreatePolygonRgn(pts, 4, WINDING);
 	}
 }
 
@@ -843,28 +925,39 @@ void CRealia::DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const
 }
 
 //画圆规
-//以m_ptBegin为轴心点转动，m_ptEnd经过的路线即为圆规画出来的图形
-void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int angle) const
+void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int iHeight)
 {
+	const int iWidth = 30;
+	const int iHeight2 = 50;
 	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 	HPEN oldpen = (HPEN)SelectObject(dc, pen);
 
 	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
 	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
 
-	//求顶点（圆规的头）坐标
-	POINT pt3;
-	double px = pt2.x - pt1.x;
-	double py = pt2.y - pt1.y;
-	double pl = sqrt(px * px + py * py);
-	double theta1 = acos((pl * pl) / (2 * pl * m_iHeight));
-	double theta2 = atan(py / px);
-	pt3.x = pt1.x + m_iHeight * cos(theta1 - theta2);
-	pt3.y = pt1.y - m_iHeight * sin(theta1 - theta2);
+	//求各点坐标
+	POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
+	GetCompassPoints(pt1, pt2, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
 	MoveToEx(dc, pt1.x, pt1.y, NULL);
 	LineTo(dc, pt3.x, pt3.y);
 	LineTo(dc, pt2.x, pt2.y);
+
+	MoveToEx(dc, pt3.x, pt3.y, NULL);
+	LineTo(dc, pt4.x, pt4.y);
+	LineTo(dc, pt5.x, pt5.y);
+	LineTo(dc, pt3.x, pt3.y);
+
+
+	MoveToEx(dc, pt1.x, pt1.y, NULL);
+	LineTo(dc, pt4.x, pt4.y);
+	MoveToEx(dc, pt2.x, pt2.y, NULL);
+	LineTo(dc, pt5.x, pt5.y);
+
+	MoveToEx(dc, pt6.x, pt6.y, NULL);
+	LineTo(dc, pt8.x, pt8.y);
+	LineTo(dc, pt9.x, pt9.y);
+	LineTo(dc, pt7.x, pt7.y);
 
 	SelectObject(dc, oldbrush);
 	::DeleteObject(hbrush);
@@ -872,4 +965,98 @@ void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int angle) const
 	SelectObject(dc, oldpen);
 	::DeleteObject(pen);
 	::DeleteObject(oldpen);
+}
+
+//点的位置如下
+//pt1,pt2,pt3为圆规的框架，其余点均为画饱满图形所用
+//pt1,pt2,pt3三点组成一个等腰三角形，腰长m_iHeight
+//pt3,pt4,pt5为边长iWidth的等边三角形
+//pt6,pt7,pt8,pt9是长iWidth / 3，宽iHeight的矩形
+//以pt1为轴心点转动，pt2经过的路线即为圆规画出来的图形
+/*
+          pt8 - pt9
+           |     |
+           |     |
+           |     |
+    pt4 - pt6 - pt7 - pt5
+       \             /
+        \           /
+         \         /
+          \       /
+           \     /
+            \   /
+             pt3
+            /   \
+           /     \
+          /       \
+         /         \
+        /           \
+       /             \
+      /               \
+     /                 \
+    /                   \
+   /                     \
+pt1                       pt2
+*/
+void CRealia::GetCompassPoints(POINT pt1, POINT pt2, LPPOINT lppt3, LPPOINT lppt4, LPPOINT lppt5, LPPOINT lppt6, LPPOINT lppt7, LPPOINT lppt8, LPPOINT lppt9)
+{
+	const int iWidth = 30;
+	const int iHeight2 = 50;
+	
+	double px = pt2.x - pt1.x;
+	double py = pt2.y - pt1.y;
+	double pl = sqrt(px * px + py * py);
+	if (pl >= lCompass * 2)
+		m_iHeight = pl / 2 + 10;
+	else
+		m_iHeight = lCompass;
+	double theta1 = acos((pl * pl) / (2 * pl * m_iHeight));
+	double theta2 = atan(py / px);
+	if (px >= 0) {
+		lppt3->x = pt1.x + m_iHeight * cos(theta1 - theta2);
+		lppt3->y = pt1.y - m_iHeight * sin(theta1 - theta2);
+	}
+	else {
+		lppt3->x = pt1.x - m_iHeight * cos(theta1 - theta2);
+		lppt3->y = pt1.y + m_iHeight * sin(theta1 - theta2);
+	}
+
+	if (px >= 0) {
+		lppt4->x = lppt3->x - iWidth * sin(pi / 2 - pi / 180 * 60 - theta2);
+		lppt4->y = lppt3->y - iWidth * cos(pi / 2 - pi / 180 * 60 - theta2);
+		lppt5->x = lppt3->x + iWidth * cos(pi / 180 * 60 - theta2);
+		lppt5->y = lppt3->y - iWidth * sin(pi / 180 * 60 - theta2);
+	}
+	else {
+		lppt4->x = lppt3->x + iWidth * sin(pi / 2 - pi / 180 * 60 - theta2);
+		lppt4->y = lppt3->y + iWidth * cos(pi / 2 - pi / 180 * 60 - theta2);
+		lppt5->x = lppt3->x - iWidth * cos(pi / 180 * 60 - theta2);
+		lppt5->y = lppt3->y + iWidth * sin(pi / 180 * 60 - theta2);
+	}
+
+	if (px >= 0) {
+		lppt6->x = lppt4->x + iWidth / 3 * cos(theta2);
+		lppt6->y = lppt4->y + iWidth / 3 * sin(theta2);
+		lppt7->x = lppt4->x + iWidth / 3 * 2 * cos(theta2);
+		lppt7->y = lppt4->y + iWidth / 3 * 2 * sin(theta2);
+	}
+	else {
+		lppt6->x = lppt4->x - iWidth / 3 * cos(theta2);
+		lppt6->y = lppt4->y - iWidth / 3 * sin(theta2);
+		lppt7->x = lppt4->x - iWidth / 3 * 2 * cos(theta2);
+		lppt7->y = lppt4->y - iWidth / 3 * 2 * sin(theta2);
+	}
+
+	if (px >= 0) {
+		lppt8->x = lppt6->x + iHeight2 * sin(theta2);
+		lppt8->y = lppt6->y - iHeight2 * cos(theta2);
+		lppt9->x = lppt7->x + iHeight2 * sin(theta2);
+		lppt9->y = lppt7->y - iHeight2 * cos(theta2);
+	}
+	else {
+		lppt8->x = lppt6->x - iHeight2 * sin(theta2);
+		lppt8->y = lppt6->y + iHeight2 * cos(theta2);
+		lppt9->x = lppt7->x - iHeight2 * sin(theta2);
+		lppt9->y = lppt7->y + iHeight2 * cos(theta2);
+	}
 }
