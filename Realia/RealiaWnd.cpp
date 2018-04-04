@@ -35,6 +35,7 @@ void CRealiaWnd::InitWindow(HWND hWnd)
 
 void CRealiaWnd::OnPaint(HDC pDc)
 {
+	//使用GDI方式：
 	//创建与windowDC兼容的内存设备环境  
 	HDC hDcMem = CreateCompatibleDC(pDc);
 	//位图的初始化和载入位图     
@@ -44,9 +45,24 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	//绘制背景
 	DrawBackground(hDcMem, m_rcWindow);
 
+
+	//使用GDI+方式去锯齿
+	Graphics graphics(hDcMem);
+
+	//在内存中建立一块“虚拟画布”
+	Bitmap memBmp(m_lWndWidth, m_lWndHeight);
+	//获取这块内存画布的Graphics引用
+	Graphics memGr(&memBmp);
+	//设置线为高质量平滑模式
+	memGr.SetSmoothingMode(SmoothingModeHighQuality);
+
 	//模仿橡皮筋类画图
 	for (int i = 0; i < m_vecRealias.size(); i++)
-		m_vecRealias.at(i).Draw(hDcMem);
+		m_vecRealias.at(i).Draw(&memGr);
+
+	//将内存画布画到窗口中
+	graphics.DrawImage(&memBmp, 0, 0, m_lWndWidth, m_lWndHeight);
+
 
 	//双缓冲技术
 	BitBlt(pDc, 0, 0, m_lWndWidth, m_lWndHeight, hDcMem, 0, 0, SRCCOPY);
@@ -55,6 +71,7 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	DeleteDC(hDcMem);
 	DeleteObject(hBmpMem);
 	DeleteObject(hBmpOld);
+	
 }
 
 void CRealiaWnd::OnLButtonDown(POINT pt)

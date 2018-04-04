@@ -10,8 +10,6 @@ AFX_STATIC_DATA double pi = 3.1415926;
 AFX_STATIC_DATA UINT rDrag = 5;//用于伸缩区的半径
 AFX_STATIC_DATA UINT rGoniometer = 30;//用于角度尺的半径
 AFX_STATIC_DATA UINT lCompass = 200;//用于圆规的腿长
-AFX_STATIC_DATA TCHAR* pFont = _T("微软雅黑");//字体类型
-AFX_STATIC_DATA UINT iFontSize = 8;//用于字体大小
 
 std::vector<CArc> m_vecArcs;
 CArc *m_pArc = NULL;
@@ -640,7 +638,7 @@ void CRealia::DrawRuler(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight) 
 	pGraphics->DrawEllipse(&penBlue, Rect(pt2.x - rDrag, pt2.y - rDrag, rDrag * 2, rDrag * 2));
 
 	Pen penGray(Color(128, 128, 128), 1);//刻度线
-	Font font(pFont, iFontSize);
+	Font font(_T("微软雅黑"), 8);//12号微软雅黑字体
 	SolidBrush brush(Color(0, 0, 255));
 
 	int count = pl / 5;
@@ -653,7 +651,7 @@ void CRealia::DrawRuler(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight) 
 			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
-			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X - 3, tmpEnd.Y), &brush);
+			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X, tmpEnd.Y), &brush);
 		}
 		else if (i % 5 == 0) {
 			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
@@ -665,7 +663,7 @@ void CRealia::DrawRuler(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight) 
 		}
 	}
 }
-
+/*
 //画三角形
 //当angle = 30度，画出来的就是锐角三角形
 //当angle = 45度，画出来的就是等腰三角形
@@ -673,7 +671,11 @@ void CRealia::DrawTriangle(Graphics* pGraphics, POINT pt1, POINT pt2, int angle)
 {
 	assert(angle >= 0);
 	assert(angle <= 90);
-	Pen penBlue(Color(0, 0, 255), 2);
+	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+
+	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
 
 	POINT pt3;
 	double px = pt2.x - pt1.x;
@@ -683,65 +685,93 @@ void CRealia::DrawTriangle(Graphics* pGraphics, POINT pt1, POINT pt2, int angle)
 	double ptheta = angle * pi / 180;
 	pt3.x = pt1.x - pl * tan(ptheta) * sin(theta);
 	pt3.y = pt1.y + pl * tan(ptheta) * cos(theta);
-	pGraphics->DrawLine(&penBlue, POINTTOPoint(pt1), POINTTOPoint(pt2));
-	pGraphics->DrawLine(&penBlue, POINTTOPoint(pt2), POINTTOPoint(pt3));
-	pGraphics->DrawLine(&penBlue, POINTTOPoint(pt3), POINTTOPoint(pt1));
+	MoveToEx(dc, pt1.x, pt1.y - 1, NULL);
+	LineTo(dc, pt2.x, pt2.y - 1);
+	LineTo(dc, pt3.x, pt3.y);
+	LineTo(dc, pt1.x, pt1.y - 1);
 
-	pGraphics->DrawEllipse(&penBlue, Rect(pt2.x - rDrag, pt2.y - rDrag, rDrag * 2, rDrag * 2));
+	Ellipse(dc, pt2.x - rDrag, pt2.y - rDrag, pt2.x + rDrag, pt2.y + rDrag);
 
-	Pen penGray(Color(128, 128, 128), 1);//刻度线
-	Font font(pFont, iFontSize);
-	SolidBrush brush(Color(0, 0, 255));
+	HPEN pen2 = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+	SelectObject(dc, pen2);
+
+	//12号微软雅黑字体
+	HFONT hFont = CreateFont(
+		-12,                       // nHeight  
+		0,                         // nWidth  
+		0,                         // nEscapement  
+		0,                         // nOrientation  
+		FW_NORMAL,                 // nWeight  
+		FALSE,                     // bItalic  
+		FALSE,                     // bUnderline  
+		0,                         // cStrikeOut  
+		ANSI_CHARSET,              // nCharSet  
+		OUT_DEFAULT_PRECIS,        // nOutPrecision  
+		CLIP_DEFAULT_PRECIS,       // nClipPrecision  
+		DEFAULT_QUALITY,           // nQuality  
+		DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily  
+		_T("微软雅黑"));           // lpszFacename 
+	SetTextColor(dc, RGB(0, 0, 255));
+	HFONT oldfont = (HFONT)SelectObject(dc, hFont);
 
 	int count = pl / 5;
 	int j = 0;
 	for (int i = 0; i < count - 5; i++) {
 		j = i + 1;//为了下面的计算少写一个括号
-		Point tmpBegin(pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta));
+		MoveToEx(dc, pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta), NULL);
 		if (i % 10 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
-			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X - 3, tmpEnd.Y + 2), &brush);
+			TextOut(dc, pt1.x + 5 * j * cos(theta) - 25 * sin(theta) - 3, pt1.y + 5 * j * sin(theta) + 25 * cos(theta) + 2, mark, lstrlen(mark));
 		}
 		else if (i % 5 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
 		}
 		else {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
 		}
 	}
 
 	count = pl * tan(ptheta) / 5;
 	for (int i = 0; i < count - 5; i++) {
 		j = i + 1;//为了下面的计算少写一个括号
-		Point tmpBegin(pt1.x - 5 * j * sin(theta), pt1.y + 5 * j * cos(theta));
+		MoveToEx(dc, pt1.x - 5 * j * sin(theta), pt1.y + 5 * j * cos(theta), NULL);
 		if (i % 10 == 0) {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 25 * cos(theta), pt1.y + 5 * j * cos(theta) + 25 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x - 5 * j * sin(theta) + 25 * cos(theta), pt1.y + 5 * j * cos(theta) + 25 * sin(theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
-			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X + 3, tmpEnd.Y - 4), &brush);
+			TextOut(dc, pt1.x - 5 * j * sin(theta) + 25 * cos(theta) + 3, pt1.y + 5 * j * cos(theta) + 25 * sin(theta) - 4, mark, lstrlen(mark));
 		}
 		else if (i % 5 == 0) {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 20 * cos(theta), pt1.y + 5 * j * cos(theta) + 20 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x - 5 * j * sin(theta) + 20 * cos(theta), pt1.y + 5 * j * cos(theta) + 20 * sin(theta));
 		}
 		else {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 10 * cos(theta), pt1.y + 5 * j * cos(theta) + 10 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			LineTo(dc, pt1.x - 5 * j * sin(theta) + 10 * cos(theta), pt1.y + 5 * j * cos(theta) + 10 * sin(theta));
 		}
 	}
+
+	SelectObject(dc, oldfont);
+	::DeleteObject(oldfont);
+	::DeleteObject(hFont);
+	SelectObject(dc, oldbrush);
+	::DeleteObject(hbrush);
+	::DeleteObject(oldbrush);
+	SelectObject(dc, oldpen);
+	::DeleteObject(pen);
+	::DeleteObject(pen2);
+	::DeleteObject(oldpen);
 }
 
 //画量角器
 //普通刻度10像素长，5的倍数20像素长，10的倍数25像素长
 void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 {
-	Pen penBlue(Color(0, 0, 255), 2);
+	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+
+	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
 
 	double px = pt2.x - pt1.x;
 	double py = pt2.y - pt1.y;
@@ -754,10 +784,8 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 	ptLeftTop.y = ptCenter.y - r;
 	ptRightBottom.x = ptCenter.x + r;
 	ptRightBottom.y = ptCenter.y + r;
-	REAL startAngle, sweepAngle;
-	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y)
 	//Arc函数从起点至终点逆时针画弧
-	//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);//上半圆
+	Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);//上半圆
 
 	//在量角器的圆心处画一个准心
 	Ellipse(dc, ptCenter.x - 5, ptCenter.y - 5, ptCenter.x + 5, ptCenter.y + 5);
@@ -765,9 +793,27 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 	//画量角器下面的直尺
 	DrawRuler(dc, pt1, pt2, m_iHeight);
 
-	Pen penGray(Color(128, 128, 128), 1);//刻度线
-	Font font(pFont, iFontSize);
-	SolidBrush brush(Color(0, 0, 255));
+	HPEN pen2 = CreatePen(PS_SOLID, 1, RGB(128, 128, 128));
+	SelectObject(dc, pen2);
+
+	//12号微软雅黑字体
+	HFONT hFont = CreateFont(
+		-12,                       // nHeight  
+		0,                         // nWidth  
+		0,                         // nEscapement  
+		0,                         // nOrientation  
+		FW_NORMAL,                 // nWeight  
+		FALSE,                     // bItalic  
+		FALSE,                     // bUnderline  
+		0,                         // cStrikeOut  
+		ANSI_CHARSET,              // nCharSet  
+		OUT_DEFAULT_PRECIS,        // nOutPrecision  
+		CLIP_DEFAULT_PRECIS,       // nClipPrecision  
+		DEFAULT_QUALITY,           // nQuality  
+		DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily  
+		_T("微软雅黑"));           // lpszFacename 
+	SetTextColor(dc, RGB(0, 0, 255));
+	HFONT oldfont = (HFONT)SelectObject(dc, hFont);
 
 	int count = 180;
 	double rad = pi / 180;
@@ -786,6 +832,17 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 			LineTo(dc, ptCenter.x - (r - 10) * cos(rad * i + theta), ptCenter.y - (r - 10) * sin(rad * i + theta));
 		}
 	}
+
+	SelectObject(dc, oldfont);
+	::DeleteObject(oldfont);
+	::DeleteObject(hFont);
+	SelectObject(dc, oldbrush);
+	::DeleteObject(hbrush);
+	::DeleteObject(oldbrush);
+	SelectObject(dc, oldpen);
+	::DeleteObject(pen);
+	::DeleteObject(pen2);
+	::DeleteObject(oldpen);
 }
 
 //画角度尺
@@ -808,8 +865,8 @@ void CRealia::DrawGoniometer(Graphics* pGraphics, POINT pt1, POINT pt2, POINT pt
 		LineTo(dc, pt3.x, pt3.y);
 		LineTo(dc, pt2.x, pt2.y);
 
-		pGraphics->DrawEllipse(&penBlue, Rect(pt1.x - rDrag, pt1.y - rDrag, rDrag * 2, rDrag * 2));
-		pGraphics->DrawEllipse(&penBlue, Rect(pt2.x - rDrag, pt2.y - rDrag, rDrag * 2, rDrag * 2));
+		Ellipse(dc, pt1.x - rDrag, pt1.y - rDrag, pt1.x + rDrag, pt1.y + rDrag);
+		Ellipse(dc, pt2.x - rDrag, pt2.y - rDrag, pt2.x + rDrag, pt2.y + rDrag);
 
 		//用余弦定理求夹角
 		LONG pxAB = abs(pt3.x - pt1.x);
@@ -966,7 +1023,7 @@ void CRealia::DrawCompass(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight
     /                   \
    /                     \
 pt1                       pt2
-*/
+
 void CRealia::GetCompassPoints(POINT pt1, POINT pt2, LPPOINT lppt3, LPPOINT lppt4, LPPOINT lppt5, LPPOINT lppt6, LPPOINT lppt7, LPPOINT lppt8, LPPOINT lppt9)
 {
 	const int iWidth = 30;
@@ -1090,3 +1147,4 @@ void CRealia::DrawArc(Graphics* pGraphics)
 	::DeleteObject(pen);
 	::DeleteObject(oldpen);
 }
+*/

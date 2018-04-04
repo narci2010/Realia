@@ -5,12 +5,17 @@
 
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
+//#define WIN32_LEAN_AND_MEAN             //  从 Windows 头文件中排除极少使用的信息
 // Windows 头文件:
 #include <windows.h>
 #include <tchar.h>
 #include <math.h>
 #include <assert.h>
+
+#include <gdiplus.h>
+using namespace Gdiplus;
+
+#pragma comment(lib, "gdiplus.lib")
 
 #ifndef GET_X_LPARAM
 #define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))

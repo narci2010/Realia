@@ -27,6 +27,12 @@ static inline double DistanceOfTwoPoint(POINT pt1, POINT pt2)
 	return sqrt(px * px + py * py);
 }
 
+//POINT->Point
+static inline Point POINTTOPoint(POINT pt)
+{
+	return Point(pt.x, pt.y);
+}
+
 class CRealia
 {
 public:
@@ -65,7 +71,7 @@ public:
 	POINT m_ptTmp;//中间点，用于角度尺
 	BOOL m_bSelect;
 
-	void Draw(HDC pDC);
+	void Draw(Graphics* pGraphics);
 	int HitTest(POINT pt);
 	BOOL SetCursor(HWND pWnd, UINT nHitTest);
 	BOOL Track(HWND pWnd, POINT point, BOOL bAllowInvert = FALSE,
@@ -88,13 +94,13 @@ protected:
 	void AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd);
 
 private:
-	void DrawRuler(HDC dc, POINT pt1, POINT pt2, const int iHeight = 50) const;
-	void DrawTriangle(HDC dc, POINT pt1, POINT pt2, int angle) const;
-	void DrawProtractor(HDC dc, POINT pt1, POINT pt2) const;
-	void DrawGoniometer(HDC dc, POINT pt1, POINT pt2, POINT pt3) const;
-	void DrawCompass(HDC dc, POINT pt1, POINT pt2, const int iHeight);
+	void DrawRuler(Graphics* pGraphics, POINT pt1, POINT pt2, const int iHeight = 50) const;
+	void DrawTriangle(Graphics* pGraphics, POINT pt1, POINT pt2, int angle) const;
+	void DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const;
+	void DrawGoniometer(Graphics* pGraphics, POINT pt1, POINT pt2, POINT pt3) const;
+	void DrawCompass(Graphics* pGraphics, POINT pt1, POINT pt2, const int iHeight);
 	void GetCompassPoints(const POINT pt1, const POINT pt2, LPPOINT lppt3, LPPOINT lppt4, LPPOINT lppt5, LPPOINT lppt6, LPPOINT lppt7, LPPOINT lppt8, LPPOINT lppt9);
-	void DrawArc(HDC dc);
+	void DrawArc(Graphics* pGraphics);
 };
 
 class CArc

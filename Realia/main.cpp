@@ -11,6 +11,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 // 程序入口点
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
+	//GDI+开启  
+	GdiplusStartupInput StartupInput;
+	ULONG_PTR m_gdiplusToken;
+	//StartupInput.GdiplusVersion = 1;
+	if (GdiplusStartup(&m_gdiplusToken, &StartupInput, NULL))MessageBox(0, TEXT("GdiPlus开启失败"), TEXT("错误"), MB_ICONERROR);
+
 	// 类名
 	TCHAR* szWindowClass = _T("Realia");
 
@@ -70,6 +76,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+
+	//GDI+关闭  
+	GdiplusShutdown(m_gdiplusToken);//可以把这个写在消息循环后面，程序退出就销毁，或者在不需要GDI+时调用，比如GDI+窗口的WM_DESTROY消息里调用
+
 	return 0;
 }
 //
