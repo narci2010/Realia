@@ -37,6 +37,12 @@ public:
 	// Style Flags
 	enum StyleFlags
 	{
+		//Ruler---------------直尺
+		//AcuteTriangle-------锐角三角尺
+		//IsoscelesTriangle---等腰三角尺
+		//Protractor----------量角器
+		//Goniometer----------角度尺
+		//Compass-------------圆规
 		Ruler = 1, AcuteTriangle = 2, IsoscelesTriangle = 3,
 		Protractor = 4, Goniometer = 5, Compass = 6,
 	};
@@ -52,10 +58,11 @@ public:
 
 	// Attributes
 	UINT m_nStyle;
-	HRGN m_rgn;
+	HRGN m_rgn;//图形所在区域
+	HRGN m_rgnTopRight;//用于拉伸的区域
 	POINT m_ptBegin;
 	POINT m_ptEnd;
-	POINT m_ptTmp;//中间点，用于角度尺和圆规
+	POINT m_ptTmp;//中间点，用于角度尺
 	BOOL m_bSelect;
 
 	void Draw(HDC pDC);

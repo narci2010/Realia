@@ -13,6 +13,7 @@ CRealiaWnd::~CRealiaWnd()
 {
 	for (std::vector<CRealia>::iterator it = m_vecRealias.begin(); it != m_vecRealias.end(); it++) {
 		DeleteObject(it->m_rgn);
+		DeleteObject(it->m_rgnTopRight);
 	}
 	m_vecRealias.clear();
 

@@ -22,6 +22,7 @@ CRealia::CRealia()
 CRealia::~CRealia()
 {
 	//DeleteObject(m_rgn);
+	//DeleteObject(m_rgnTopRight);
 }
 
 CRealia::CRealia(POINT ptBegin, POINT ptEnd, UINT nStyle)
@@ -56,6 +57,8 @@ CRealia::CRealia(const CRealia &other)
 	m_nStyle = other.m_nStyle;
 	DeleteObject(m_rgn);
 	m_rgn = other.m_rgn;
+	DeleteObject(m_rgnTopRight);
+	m_rgnTopRight = other.m_rgnTopRight;
 	m_ptBegin.x = other.m_ptBegin.x;
 	m_ptBegin.y = other.m_ptBegin.y;
 	m_ptEnd.x = other.m_ptEnd.x;
@@ -95,6 +98,7 @@ void CRealia::Construct()
 	m_iAngle = 0;
 
 	m_rgn = CreateRectRgn(0, 0, 0, 0);
+	m_rgnTopRight = CreateRectRgn(0, 0, 0, 0);
 	m_ptBegin = m_ptEnd = m_ptTmp = { 0, 0 };
 	m_bSelect = FALSE;
 }
@@ -141,18 +145,17 @@ int CRealia::HitTest(POINT point)
 
 	//AdjustRgn(0, m_ptBegin, m_ptEnd);
 
-	HRGN rgn = CreateEllipticRgn(m_ptEnd.x - rDrag, m_ptEnd.y - rDrag, m_ptEnd.x + rDrag, m_ptEnd.y + rDrag);
-	if (m_nStyle == CRealia::Goniometer) {
-		HRGN rgn2 = CreateEllipticRgn(m_ptBegin.x - rDrag, m_ptBegin.y - rDrag, m_ptBegin.x + rDrag, m_ptBegin.y + rDrag);
-		if (PtInRegion(rgn, point.x, point.y))
+	if (m_nStyle == CRealia::Goniometer) {//角度尺
+		HRGN rgnTopLeft = CreateEllipticRgn(m_ptBegin.x - rDrag, m_ptBegin.y - rDrag, m_ptBegin.x + rDrag, m_ptBegin.y + rDrag);
+		if (PtInRegion(m_rgnTopRight, point.x, point.y))
 			hitResult = hitTopRight;
-		else if (PtInRegion(rgn2, point.x, point.y))
+		else if (PtInRegion(rgnTopLeft, point.x, point.y))
 			hitResult = hitTopLeft;
 		else if (PtInRegion(m_rgn, point.x, point.y))
 			hitResult = hitMiddle;
-		::DeleteObject(rgn2);
+		::DeleteObject(rgnTopLeft);
 	}
-	else if (m_nStyle == CRealia::Compass) {
+	else if (m_nStyle == CRealia::Compass) {//圆规
 		if (PtInRegion(m_rgn, point.x, point.y)) {
 			hitResult = hitMiddle;
 		}
@@ -160,12 +163,7 @@ int CRealia::HitTest(POINT point)
 			POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
 			GetCompassPoints(m_ptBegin, m_ptEnd, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
-			POINT ptsRight[3], ptsTop[4];
-
-			EqualPoint(&ptsRight[0], &m_ptEnd);
-			EqualPoint(&ptsRight[1], &pt3);
-			EqualPoint(&ptsRight[2], &pt5);
-			HRGN rgnRight = CreatePolygonRgn(ptsRight, 3, WINDING);
+			POINT ptsTop[4];
 
 			EqualPoint(&ptsTop[0], &pt6);
 			EqualPoint(&ptsTop[1], &pt8);
@@ -173,25 +171,23 @@ int CRealia::HitTest(POINT point)
 			EqualPoint(&ptsTop[3], &pt7);
 			HRGN rgnTop = CreatePolygonRgn(ptsTop, 4, WINDING);
 
-			if (PtInRegion(rgnRight, point.x, point.y)) {
+			if (PtInRegion(m_rgnTopRight, point.x, point.y)) {
 				hitResult = hitTopRight;
 			}
 			else if (PtInRegion(rgnTop, point.x, point.y)) {
 				hitResult = hitTop;
 			}
 
-			::DeleteObject(rgnRight);
 			::DeleteObject(rgnTop);
 		}
 	}
-	else if (PtInRegion(rgn, point.x, point.y)) {
+	else if (PtInRegion(m_rgnTopRight, point.x, point.y)) {
 		hitResult = hitDrag;
 	}
 	else if (PtInRegion(m_rgn, point.x, point.y)) {
 		hitResult = hitMiddle;
 	}
 
-	::DeleteObject(rgn);
 	return hitResult;
 }
 
@@ -245,6 +241,7 @@ BOOL CRealia::TrackRubberBand(HWND pWnd, POINT point, BOOL bAllowInvert)
 	m_ptBegin.y = m_ptEnd.y = point.y;
 	//m_rgn = CreateRectRgn(0, 0, 0, 0);
 	SetRectRgn(m_rgn, point.x, point.y, point.x, point.y);
+	SetRectRgn(m_rgnTopRight, point.x, point.y, point.x, point.y);
 	int nHandle = hitDrag;
 	if (m_nStyle == CRealia::Goniometer)
 		nHandle = hitTopLeft;
@@ -397,22 +394,44 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 			double r = DistanceOfTwoPoint(ptBeginSave, ptEndSave);
 			double px = ptEndSave.x - ptBeginSave.x;
 			double py = ptEndSave.y - ptBeginSave.y;
-			double theta = atan(py / px);
+			double theta, theta2;
+			if (px == 0)
+				theta = pi / 2;
+			else
+				theta = atan(py / px);
 
 			//求旋转角
+			double dtheta, dtheta2;
 			double dx = ptDown.x - ptBeginSave.x;
 			double dy = ptDown.y - ptBeginSave.y;
-			double dtheta = atan(dy / dx);
+			if (dx == 0)
+				dtheta = pi / 2;
+			else
+				dtheta = atan(dy / dx);
 			double dx2 = ptLast.x - ptBeginSave.x;
 			double dy2 = ptLast.y - ptBeginSave.y;
-			double dtheta2 = atan(dy2 / dx2);
+			if (dx2 == 0)
+				dtheta2 = (dy2 / abs(dy2)) * pi / 2;
+			else
+				dtheta2 = atan(dy2 / dx2);
 
-			double theta2 = dtheta2 - dtheta;
+			theta2 = dtheta2 - dtheta;
+
+			if (theta2 == 0)
+				return;
+
+			//跨过y轴的瞬间theta2的正负与顺逆时针相反
+			if (dx * dx2 < 0) {
+				if (theta2 < 0)
+					theta2 = theta2 + pi;
+				else
+					theta2 = theta2 - pi;
+			}
 
 			m_vecArcs.at(m_vecArcs.size() - 1).m_vecPoints.push_back(m_ptEnd);
 
 			//求ptEndSave绕ptBeginSave旋转theta度后的坐标
-			if (ptLast.x - ptBeginSave.x >= 0) {
+			if (ptEndSave.x - ptBeginSave.x >= 0) {
 				m_ptEnd.x = ptBeginSave.x + r * cos(theta + theta2);
 				m_ptEnd.y = ptBeginSave.y + r * sin(theta + theta2);
 			}
@@ -577,14 +596,23 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 		POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
 		GetCompassPoints(m_ptBegin, m_ptEnd, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
-		POINT pts[4];
+		POINT pts[4], ptsRight[3];
 		EqualPoint(&pts[0], &m_ptBegin);
 		EqualPoint(&pts[1], &pt3);
 		EqualPoint(&pts[2], &pt5);
 		EqualPoint(&pts[3], &pt4);
 		::DeleteObject(m_rgn);
 		m_rgn = CreatePolygonRgn(pts, 4, WINDING);
+
+		EqualPoint(&ptsRight[0], &m_ptEnd);
+		EqualPoint(&ptsRight[1], &pt3);
+		EqualPoint(&ptsRight[2], &pt5);
+		::DeleteObject(m_rgnTopRight);
+		m_rgnTopRight = CreatePolygonRgn(ptsRight, 3, WINDING);
+		return;
 	}
+	::DeleteObject(m_rgnTopRight);
+	m_rgnTopRight = CreateEllipticRgn(ptEnd.x - rDrag, ptEnd.y - rDrag, ptEnd.x + rDrag, ptEnd.y + rDrag);
 }
 
 //画直尺：5像素为1毫米，固定直尺总宽度为60像素
@@ -936,8 +964,8 @@ void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int iHeight)
 {
 	const int iWidth = 30;
 	const int iHeight2 = 50;
-	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
-	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+	//HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+	//HPEN oldpen = (HPEN)SelectObject(dc, pen);
 
 	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
 	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
@@ -946,32 +974,55 @@ void CRealia::DrawCompass(HDC dc, POINT pt1, POINT pt2, int iHeight)
 	POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
 	GetCompassPoints(pt1, pt2, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
-	MoveToEx(dc, pt1.x, pt1.y, NULL);
-	LineTo(dc, pt3.x, pt3.y);
-	LineTo(dc, pt2.x, pt2.y);
+	//MoveToEx(dc, pt1.x, pt1.y, NULL);
+	//LineTo(dc, pt3.x, pt3.y);
+	//LineTo(dc, pt2.x, pt2.y);
 
-	MoveToEx(dc, pt3.x, pt3.y, NULL);
-	LineTo(dc, pt4.x, pt4.y);
-	LineTo(dc, pt5.x, pt5.y);
-	LineTo(dc, pt3.x, pt3.y);
+	//MoveToEx(dc, pt3.x, pt3.y, NULL);
+	//LineTo(dc, pt4.x, pt4.y);
+	//LineTo(dc, pt5.x, pt5.y);
+	//LineTo(dc, pt3.x, pt3.y);
 
 
-	MoveToEx(dc, pt1.x, pt1.y, NULL);
-	LineTo(dc, pt4.x, pt4.y);
-	MoveToEx(dc, pt2.x, pt2.y, NULL);
-	LineTo(dc, pt5.x, pt5.y);
+	//MoveToEx(dc, pt1.x, pt1.y, NULL);
+	//LineTo(dc, pt4.x, pt4.y);
+	//MoveToEx(dc, pt2.x, pt2.y, NULL);
+	//LineTo(dc, pt5.x, pt5.y);
 
-	MoveToEx(dc, pt6.x, pt6.y, NULL);
-	LineTo(dc, pt8.x, pt8.y);
-	LineTo(dc, pt9.x, pt9.y);
-	LineTo(dc, pt7.x, pt7.y);
+	//MoveToEx(dc, pt6.x, pt6.y, NULL);
+	//LineTo(dc, pt8.x, pt8.y);
+	//LineTo(dc, pt9.x, pt9.y);
+	//LineTo(dc, pt7.x, pt7.y);
+
+	POINT ptsTop[4];
+
+	EqualPoint(&ptsTop[0], &pt6);
+	EqualPoint(&ptsTop[1], &pt8);
+	EqualPoint(&ptsTop[2], &pt9);
+	EqualPoint(&ptsTop[3], &pt7);
+	HRGN rgnTop = CreatePolygonRgn(ptsTop, 4, WINDING);
+
+	//给区域着色
+	HBRUSH hbTop = CreateSolidBrush(RGB(83, 83, 199));
+	HBRUSH hbLeft = CreateSolidBrush(RGB(146, 146, 192));
+	HBRUSH hbRight = CreateSolidBrush(RGB(123, 123, 192));
+
+	FillRgn(dc, rgnTop, hbTop);
+	FillRgn(dc, m_rgn, hbLeft);
+	FillRgn(dc, m_rgnTopRight, hbRight);
+
+	::DeleteObject(rgnTop);
+
+	::DeleteObject(hbTop);
+	::DeleteObject(hbLeft);
+	::DeleteObject(hbRight);
 
 	SelectObject(dc, oldbrush);
 	::DeleteObject(hbrush);
 	::DeleteObject(oldbrush);
-	SelectObject(dc, oldpen);
-	::DeleteObject(pen);
-	::DeleteObject(oldpen);
+	//SelectObject(dc, oldpen);
+	//::DeleteObject(pen);
+	//::DeleteObject(oldpen);
 }
 
 //点的位置如下
