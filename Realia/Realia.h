@@ -1,6 +1,12 @@
 #pragma once
 
+#include "stdafx.h"
+#include <math.h>
 #include <vector>
+
+#define AFX_STATIC_DATA extern __declspec(selectany)
+
+AFX_STATIC_DATA double pi = 3.1415926;
 
 //判断两点是否相等
 static inline BOOL IsPointEqual(POINT pt1, POINT pt2)
@@ -31,6 +37,26 @@ static inline double DistanceOfTwoPoint(POINT pt1, POINT pt2)
 static inline Point POINTTOPoint(POINT pt)
 {
 	return Point(pt.x, pt.y);
+}
+
+//获取直线相对X轴正反向以pt1为圆心按顺时针旋转的角度
+//以弧度制表示，取值范围[0, 2pi)
+static inline double GetAngleOfLine(POINT pt1, POINT pt2)
+{
+	double dx = pt2.x - pt1.x;
+	double dy = pt2.y - pt1.y;
+	double theta;
+	if (dx > 0 && dy >= 0)
+		theta = atan(dy / dx);
+	else if (dx == 0 && dy >= 0)
+		theta = pi / 2;
+	else if (dx < 0)
+		theta = pi + atan(dy / dx);
+	else if (dx == 0 && dy < 0)
+		theta = pi * 3 / 2;
+	else if (dx > 0 && dy < 0)
+		theta = pi * 2 + atan(dy / dx);
+	return theta;
 }
 
 class CRealia
@@ -110,21 +136,32 @@ public:
 	{
 		m_ptCenter = { 0, 0 };
 		m_iRadius = 0;
+		m_fStartAngle = -1;
+		m_fSweepAngle1 = 0;
+		m_fSweepAngle2 = 0;
+		m_dCurrentTheta = 0;
 	}
 	CArc(POINT ptCenter, UINT iRadius)
 	{
 		m_ptCenter.x = ptCenter.x;
 		m_ptCenter.y = ptCenter.y;
 		m_iRadius = iRadius;
+		m_fStartAngle = -1;
+		m_fSweepAngle1 = 0;
+		m_fSweepAngle2 = 0;
+		m_dCurrentTheta = 0;
 	}
 	~CArc()
 	{
-		m_vecPoints.clear();
+		
 	}
 
 	POINT m_ptCenter;//圆心
 	UINT m_iRadius;//半径
-	std::vector<POINT> m_vecPoints;//圆弧上的点，每两点画一次
+	REAL m_fStartAngle;//起始角度
+	REAL m_fSweepAngle1;//顺时针旋转角度（正数）
+	REAL m_fSweepAngle2;//逆时针旋转角度（负数）
+	double m_dCurrentTheta;//当前鼠标坐标与圆心的直线的偏转角（弧度制）,用于确定旋转方向是逆时针还是顺时针所用
 };
 
 extern std::vector<CArc> m_vecArcs;

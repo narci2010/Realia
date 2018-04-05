@@ -9,7 +9,6 @@
 // Windows м╥нд╪Ч:
 #include <windows.h>
 #include <tchar.h>
-#include <math.h>
 #include <assert.h>
 
 #include <gdiplus.h>

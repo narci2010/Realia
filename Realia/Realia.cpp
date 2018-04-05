@@ -1,12 +1,8 @@
-#include "stdafx.h"
 #include "Realia.h"
 #include <cstddef>
 #include <stdlib.h>
 
-#define AFX_STATIC_DATA extern __declspec(selectany)
-
 AFX_STATIC_DATA HCURSOR _afxCursors[10] = { 0, };
-AFX_STATIC_DATA double pi = 3.1415926;
 AFX_STATIC_DATA UINT rDrag = 5;//用于伸缩区的半径
 AFX_STATIC_DATA UINT rGoniometer = 30;//用于角度尺的半径
 AFX_STATIC_DATA UINT lCompass = 200;//用于圆规的腿长
@@ -120,23 +116,23 @@ void CRealia::Draw(Graphics* pGraphics)
 	if (m_nStyle == CRealia::Ruler) {
 		DrawRuler(pGraphics, m_ptBegin, m_ptEnd, m_iHeight);
 	}
-	//else if (m_nStyle == CRealia::AcuteTriangle) {
-	//	DrawTriangle(pGraphics, m_ptBegin, m_ptEnd, m_iAngle);
-	//}
-	//else if (m_nStyle == CRealia::IsoscelesTriangle) {
-	//	DrawTriangle(pGraphics, m_ptBegin, m_ptEnd, m_iAngle);
-	//}
-	//else if (m_nStyle == CRealia::Protractor) {
-	//	DrawProtractor(pGraphics, m_ptBegin, m_ptEnd);
-	//}
-	//else if (m_nStyle == CRealia::Goniometer) {
-	//	DrawGoniometer(pGraphics, m_ptBegin, m_ptEnd, m_ptTmp);
-	//}
-	//else if (m_nStyle == CRealia::Compass) {
-	//	DrawCompass(pGraphics, m_ptBegin, m_ptEnd, m_iHeight);
-	//}
+	else if (m_nStyle == CRealia::AcuteTriangle) {
+		DrawTriangle(pGraphics, m_ptBegin, m_ptEnd, m_iAngle);
+	}
+	else if (m_nStyle == CRealia::IsoscelesTriangle) {
+		DrawTriangle(pGraphics, m_ptBegin, m_ptEnd, m_iAngle);
+	}
+	else if (m_nStyle == CRealia::Protractor) {
+		DrawProtractor(pGraphics, m_ptBegin, m_ptEnd);
+	}
+	else if (m_nStyle == CRealia::Goniometer) {
+		DrawGoniometer(pGraphics, m_ptBegin, m_ptEnd, m_ptTmp);
+	}
+	else if (m_nStyle == CRealia::Compass) {
+		DrawCompass(pGraphics, m_ptBegin, m_ptEnd, m_iHeight);
+	}
 
-	//DrawArc(pGraphics);
+	DrawArc(pGraphics);
 
 	//assert(RestoreDC(pDC, -1));
 }
@@ -158,7 +154,7 @@ int CRealia::HitTest(POINT point)
 		::DeleteObject(rgnTopLeft);
 	}
 	else if (m_nStyle == CRealia::Compass) {//圆规
-	/*	if (PtInRegion(m_rgn, point.x, point.y)) {
+		if (PtInRegion(m_rgn, point.x, point.y)) {
 			hitResult = hitMiddle;
 		}
 		else {
@@ -181,7 +177,7 @@ int CRealia::HitTest(POINT point)
 			}
 
 			::DeleteObject(rgnTop);
-		}*/
+		}
 	}
 	else if (PtInRegion(m_rgnTopRight, point.x, point.y)) {
 		hitResult = hitDrag;
@@ -231,6 +227,8 @@ BOOL CRealia::Track(HWND pWnd, POINT point, BOOL bAllowInvert,
 	if (m_nStyle == CRealia::Compass && nHandle == hitTop) {
 		m_pArc = new CArc(m_ptBegin, DistanceOfTwoPoint(m_ptBegin, m_ptEnd));
 		m_vecArcs.push_back(*m_pArc);
+		delete m_pArc;
+		m_pArc = &m_vecArcs.at(m_vecArcs.size() - 1);
 	}
 	return TrackHandle(nHandle, pWnd, point, pWndClipTo);
 }
@@ -297,7 +295,6 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 			// handle movement/accept messages
 		case WM_LBUTTONUP:
 			if (m_pArc != NULL) {
-				delete m_pArc;
 				m_pArc = NULL;
 			}
 
@@ -326,7 +323,7 @@ BOOL CRealia::TrackHandle(int nHandle, HWND pWnd, POINT point,
 			{
 				bMoved = TRUE;
 				AdjustRgn(nHandle, m_ptBegin, m_ptEnd);
-				InvalidateRect(pWnd, NULL, true);
+				InvalidateRect(pWnd, NULL, false);
 				UpdateWindow(pWnd);
 			}
 
@@ -394,55 +391,46 @@ void CRealia::ModifyPointers(int nHandle, POINT ptBeginSave, POINT ptEndSave, PO
 		if (m_nStyle == CRealia::Compass) {//圆规画圆弧
 			//已知圆心、半径和圆上一点坐标ptEndSave
 			double r = DistanceOfTwoPoint(ptBeginSave, ptEndSave);
-			double px = ptEndSave.x - ptBeginSave.x;
-			double py = ptEndSave.y - ptBeginSave.y;
 			double theta, theta2;
-			if (px == 0)
-				theta = pi / 2;
-			else
-				theta = atan(py / px);
+			theta = GetAngleOfLine(ptBeginSave, ptEndSave);
 
 			//求旋转角
-			double dtheta, dtheta2;
-			double dx = ptDown.x - ptBeginSave.x;
-			double dy = ptDown.y - ptBeginSave.y;
-			if (dx == 0)
-				dtheta = pi / 2;
-			else
-				dtheta = atan(dy / dx);
-			double dx2 = ptLast.x - ptBeginSave.x;
-			double dy2 = ptLast.y - ptBeginSave.y;
-			if (dx2 == 0)
-				dtheta2 = (dy2 / abs(dy2)) * pi / 2;
-			else
-				dtheta2 = atan(dy2 / dx2);
+			double dtheta1 = GetAngleOfLine(ptBeginSave, ptDown);
+			double dtheta2 = GetAngleOfLine(ptBeginSave, ptLast);
 
-			theta2 = dtheta2 - dtheta;
+			theta2 = dtheta2 - dtheta1;
 
 			if (theta2 == 0)
 				return;
 
-			//跨过y轴的瞬间theta2的正负与顺逆时针相反
-			if (dx * dx2 < 0) {
-				if (theta2 < 0)
-					theta2 = theta2 + pi;
-				else
-					theta2 = theta2 - pi;
-			}
-
-			m_vecArcs.at(m_vecArcs.size() - 1).m_vecPoints.push_back(m_ptEnd);
-
 			//求ptEndSave绕ptBeginSave旋转theta度后的坐标
-			if (ptEndSave.x - ptBeginSave.x >= 0) {
-				m_ptEnd.x = ptBeginSave.x + r * cos(theta + theta2);
-				m_ptEnd.y = ptBeginSave.y + r * sin(theta + theta2);
+			m_ptEnd.x = ptBeginSave.x + r * cos(theta + theta2);
+			m_ptEnd.y = ptBeginSave.y + r * sin(theta + theta2);
+
+			//计算并存储所画的圆弧
+			if (m_pArc->m_fStartAngle == -1) {//第一次记录圆规的旋转情况
+				m_pArc->m_fStartAngle = theta * 180 / pi;
+				m_pArc->m_dCurrentTheta = dtheta1;
 			}
 			else {
-				m_ptEnd.x = ptBeginSave.x - r * cos(theta + theta2);
-				m_ptEnd.y = ptBeginSave.y - r * sin(theta + theta2);
-			}
+				double lastTheta = m_pArc->m_dCurrentTheta;
+				double curTheta = dtheta2;
 
-			m_vecArcs.at(m_vecArcs.size() - 1).m_vecPoints.push_back(m_ptEnd);
+				if (curTheta - lastTheta < -5)
+					curTheta = curTheta + pi * 2;
+				if (curTheta - lastTheta > 5)
+					curTheta = curTheta - pi * 2;
+
+				REAL sweepAngle = (curTheta - dtheta1) * 180 / pi;
+
+				if (sweepAngle > m_pArc->m_fSweepAngle1)
+					m_pArc->m_fSweepAngle1 = sweepAngle;
+
+				if (sweepAngle < m_pArc->m_fSweepAngle2)
+					m_pArc->m_fSweepAngle2 = sweepAngle;
+
+				m_pArc->m_dCurrentTheta = curTheta;
+			}
 		}
 	}
 	else if (nHandle == hitMiddle) {//移动区域
@@ -594,7 +582,7 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 			m_rgn = CreateEllipticRgn(ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y);
 		}
 	}
-	/*else if (m_nStyle == CRealia::Compass) {
+	else if (m_nStyle == CRealia::Compass) {
 		POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
 		GetCompassPoints(m_ptBegin, m_ptEnd, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
@@ -612,7 +600,7 @@ void CRealia::AdjustRgn(int nHandle, POINT ptBegin, POINT ptEnd)
 		::DeleteObject(m_rgnTopRight);
 		m_rgnTopRight = CreatePolygonRgn(ptsRight, 3, WINDING);
 		return;
-	}*/
+	}
 	::DeleteObject(m_rgnTopRight);
 	m_rgnTopRight = CreateEllipticRgn(ptEnd.x - rDrag, ptEnd.y - rDrag, ptEnd.x + rDrag, ptEnd.y + rDrag);
 }
@@ -645,24 +633,23 @@ void CRealia::DrawRuler(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight) 
 
 	int count = pl / 5;
 	int j = 0;
+	Point tmpBegin, tmpEnd;
 	for (int i = 0; i < count - 2; i++) {
 		j = i + 1;//为了下面的计算少写一个括号
-		Point tmpBegin(pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta));
+		tmpBegin = Point(pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta));
 		if (i % 10 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
 			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X - 3, tmpEnd.Y), &brush);
 		}
 		else if (i % 5 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
 		}
 		else {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
 		}
+		pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
 	}
 }
 
@@ -695,45 +682,42 @@ void CRealia::DrawTriangle(Graphics* pGraphics, POINT pt1, POINT pt2, int angle)
 
 	int count = pl / 5;
 	int j = 0;
+	Point tmpBegin, tmpEnd;
 	for (int i = 0; i < count - 5; i++) {
 		j = i + 1;//为了下面的计算少写一个括号
-		Point tmpBegin(pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta));
+		tmpBegin = Point(pt1.x + 5 * j * cos(theta), pt1.y + 5 * j * sin(theta));
 		if (i % 10 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 25 * sin(theta), pt1.y + 5 * j * sin(theta) + 25 * cos(theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
 			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X - 3, tmpEnd.Y + 2), &brush);
 		}
 		else if (i % 5 == 0) {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 20 * sin(theta), pt1.y + 5 * j * sin(theta) + 20 * cos(theta));
 		}
 		else {
-			Point tmpEnd(pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x + 5 * j * cos(theta) - 10 * sin(theta), pt1.y + 5 * j * sin(theta) + 10 * cos(theta));
 		}
+		pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
 	}
 
 	count = pl * tan(ptheta) / 5;
 	for (int i = 0; i < count - 5; i++) {
 		j = i + 1;//为了下面的计算少写一个括号
-		Point tmpBegin(pt1.x - 5 * j * sin(theta), pt1.y + 5 * j * cos(theta));
+		tmpBegin = Point(pt1.x - 5 * j * sin(theta), pt1.y + 5 * j * cos(theta));
 		if (i % 10 == 0) {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 25 * cos(theta), pt1.y + 5 * j * cos(theta) + 25 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x - 5 * j * sin(theta) + 25 * cos(theta), pt1.y + 5 * j * cos(theta) + 25 * sin(theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), i / 10);
 			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X + 3, tmpEnd.Y - 4), &brush);
 		}
 		else if (i % 5 == 0) {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 20 * cos(theta), pt1.y + 5 * j * cos(theta) + 20 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x - 5 * j * sin(theta) + 20 * cos(theta), pt1.y + 5 * j * cos(theta) + 20 * sin(theta));
 		}
 		else {
-			Point tmpEnd(pt1.x - 5 * j * sin(theta) + 10 * cos(theta), pt1.y + 5 * j * cos(theta) + 10 * sin(theta));
-			pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
+			tmpEnd = Point(pt1.x - 5 * j * sin(theta) + 10 * cos(theta), pt1.y + 5 * j * cos(theta) + 10 * sin(theta));
 		}
+		pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
 	}
 }
 
@@ -755,15 +739,17 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 	ptRightBottom.x = ptCenter.x + r;
 	ptRightBottom.y = ptCenter.y + r;
 	REAL startAngle, sweepAngle;
-	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y)
+	startAngle = (theta + pi) * 180 / pi;
+	sweepAngle = 180;
+	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
 	//Arc函数从起点至终点逆时针画弧
 	//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);//上半圆
 
 	//在量角器的圆心处画一个准心
-	Ellipse(dc, ptCenter.x - 5, ptCenter.y - 5, ptCenter.x + 5, ptCenter.y + 5);
+	pGraphics->DrawEllipse(&penBlue, Rect(ptCenter.x - rDrag, ptCenter.y - rDrag, rDrag * 2, rDrag * 2));
 
 	//画量角器下面的直尺
-	DrawRuler(dc, pt1, pt2, m_iHeight);
+	DrawRuler(pGraphics, pt1, pt2, m_iHeight);
 
 	Pen penGray(Color(128, 128, 128), 1);//刻度线
 	Font font(pFont, iFontSize);
@@ -771,20 +757,22 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 
 	int count = 180;
 	double rad = pi / 180;
+	Point tmpBegin, tmpEnd;
 	for (int i = 0; i <= count; i++) {
-		MoveToEx(dc, ptCenter.x - r * cos(rad * i + theta), ptCenter.y - r * sin(rad * i + theta), NULL);
+		tmpBegin = Point(ptCenter.x - r * cos(rad * i + theta), ptCenter.y - r * sin(rad * i + theta));
 		if (i % 10 == 0) {
-			LineTo(dc, ptCenter.x - (r - 25) * cos(rad * i + theta), ptCenter.y - (r - 25) * sin(rad * i + theta));
+			tmpEnd = Point(ptCenter.x - (r - 25) * cos(rad * i + theta), ptCenter.y - (r - 25) * sin(rad * i + theta));
 			TCHAR mark[8];
 			wsprintf(mark, _T("%d"), 180 - i);
-			TextOut(dc, ptCenter.x - (r - 25) * cos(rad * i + theta), ptCenter.y - (r - 25) * sin(rad * i + theta), mark, lstrlen(mark));
+			pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(tmpEnd.X, tmpEnd.Y), &brush);
 		}
 		else if (i % 5 == 0) {
-			LineTo(dc, ptCenter.x - (r - 20) * cos(rad * i + theta), ptCenter.y - (r - 20) * sin(rad * i + theta));
+			tmpEnd = Point(ptCenter.x - (r - 20) * cos(rad * i + theta), ptCenter.y - (r - 20) * sin(rad * i + theta));
 		}
 		else {
-			LineTo(dc, ptCenter.x - (r - 10) * cos(rad * i + theta), ptCenter.y - (r - 10) * sin(rad * i + theta));
+			tmpEnd = Point(ptCenter.x - (r - 10) * cos(rad * i + theta), ptCenter.y - (r - 10) * sin(rad * i + theta));
 		}
+		pGraphics->DrawLine(&penGray, tmpBegin, tmpEnd);
 	}
 }
 
@@ -793,37 +781,23 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 //cosA = (b^2 + c^2 - a^2) / (2bc)
 void CRealia::DrawGoniometer(Graphics* pGraphics, POINT pt1, POINT pt2, POINT pt3) const
 {
-	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
-	HPEN oldpen = (HPEN)SelectObject(dc, pen);
-
-	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
+	Pen penBlue(Color(0, 0, 255), 2);
 
 	if (pt3.x == 0 && pt3.y == 0) {
-		MoveToEx(dc, pt1.x, pt1.y, NULL);
-		LineTo(dc, pt2.x, pt2.y);
+		pGraphics->DrawLine(&penBlue, POINTTOPoint(pt1), POINTTOPoint(pt2));
 	}
 	else {
-		MoveToEx(dc, pt1.x, pt1.y, NULL);
-		LineTo(dc, pt3.x, pt3.y);
-		LineTo(dc, pt2.x, pt2.y);
+		pGraphics->DrawLine(&penBlue, POINTTOPoint(pt1), POINTTOPoint(pt3));
+		pGraphics->DrawLine(&penBlue, POINTTOPoint(pt3), POINTTOPoint(pt2));
 
 		pGraphics->DrawEllipse(&penBlue, Rect(pt1.x - rDrag, pt1.y - rDrag, rDrag * 2, rDrag * 2));
 		pGraphics->DrawEllipse(&penBlue, Rect(pt2.x - rDrag, pt2.y - rDrag, rDrag * 2, rDrag * 2));
 
-		//用余弦定理求夹角
-		LONG pxAB = abs(pt3.x - pt1.x);
-		LONG pyAB = abs(pt3.y - pt1.y);
-		double c = sqrt(pxAB * pxAB + pyAB * pyAB);
-		LONG pxAC = abs(pt3.x - pt2.x);
-		LONG pyAC = abs(pt3.y - pt2.y);
-		double b = sqrt(pxAC * pxAC + pyAC * pyAC);
-		LONG pxBC = abs(pt2.x - pt1.x);
-		LONG pyBC = abs(pt2.y - pt1.y);
-		double a = sqrt(pxBC * pxBC + pyBC * pyBC);
-		if (2 * b * c == 0) return;
-		double theta = acos((b * b + c * c - a * a) / (2 * b * c));
-		int angle = theta * 180 / pi;
+		double theta1 = GetAngleOfLine(pt3, pt1);
+		double theta2 = GetAngleOfLine(pt3, pt2);
+		double theta = theta2 - theta1;
+		if (theta < 0)
+			theta = theta + pi * 2;
 
 		//计算圆的外接正方形的左上角和右下角的坐标
 		POINT ptLeftTop, ptRightBottom;
@@ -831,43 +805,21 @@ void CRealia::DrawGoniometer(Graphics* pGraphics, POINT pt1, POINT pt2, POINT pt
 		ptLeftTop.y = pt3.y - rGoniometer;
 		ptRightBottom.x = pt3.x + rGoniometer;
 		ptRightBottom.y = pt3.y + rGoniometer;
+		REAL startAngle, sweepAngle;
+		startAngle = theta1 * 180 / pi;
+		sweepAngle = theta * 180 / pi;
+		pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, rGoniometer * 2, rGoniometer * 2), startAngle, sweepAngle);
 		//Arc函数从起点至终点逆时针画弧
-		Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
+		//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
 
-		//12号微软雅黑字体
-		HFONT hFont = CreateFont(
-			-12,                       // nHeight  
-			0,                         // nWidth  
-			0,                         // nEscapement  
-			0,                         // nOrientation  
-			FW_NORMAL,                 // nWeight  
-			FALSE,                     // bItalic  
-			FALSE,                     // bUnderline  
-			0,                         // cStrikeOut  
-			ANSI_CHARSET,              // nCharSet  
-			OUT_DEFAULT_PRECIS,        // nOutPrecision  
-			CLIP_DEFAULT_PRECIS,       // nClipPrecision  
-			DEFAULT_QUALITY,           // nQuality  
-			DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily  
-			_T("微软雅黑"));           // lpszFacename 
-		SetTextColor(dc, RGB(0, 0, 0));
-		HFONT oldfont = (HFONT)SelectObject(dc, hFont);
+		Font font(pFont, iFontSize);
+		SolidBrush brush(Color(0, 0, 255));
 
+		int angle = theta * 180 / pi;
 		TCHAR mark[8];
 		wsprintf(mark, _T("%d°"), angle);
-		TextOut(dc, pt3.x, pt3.y, mark, lstrlen(mark));
-
-		SelectObject(dc, oldfont);
-		::DeleteObject(hFont);
-		::DeleteObject(oldfont);
+		pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(pt3.x, pt3.y), &brush);
 	}
-
-	SelectObject(dc, oldbrush);
-	::DeleteObject(hbrush);
-	::DeleteObject(oldbrush);
-	SelectObject(dc, oldpen);
-	::DeleteObject(pen);
-	::DeleteObject(oldpen);
 }
 
 //画圆规
@@ -875,65 +827,39 @@ void CRealia::DrawCompass(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight
 {
 	const int iWidth = 30;
 	const int iHeight2 = 50;
-	//HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
-	//HPEN oldpen = (HPEN)SelectObject(dc, pen);
-
-	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
+	//Pen penBlue(Color(0, 0, 255), 2);
 
 	//求各点坐标
 	POINT pt3, pt4, pt5, pt6, pt7, pt8, pt9;
 	GetCompassPoints(pt1, pt2, &pt3, &pt4, &pt5, &pt6, &pt7, &pt8, &pt9);
 
-	//MoveToEx(dc, pt1.x, pt1.y, NULL);
-	//LineTo(dc, pt3.x, pt3.y);
-	//LineTo(dc, pt2.x, pt2.y);
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt1), POINTTOPoint(pt3));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt3), POINTTOPoint(pt2));
 
-	//MoveToEx(dc, pt3.x, pt3.y, NULL);
-	//LineTo(dc, pt4.x, pt4.y);
-	//LineTo(dc, pt5.x, pt5.y);
-	//LineTo(dc, pt3.x, pt3.y);
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt3), POINTTOPoint(pt4));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt4), POINTTOPoint(pt5));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt5), POINTTOPoint(pt3));
 
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt1), POINTTOPoint(pt4));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt2), POINTTOPoint(pt5));
+	//
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt6), POINTTOPoint(pt8));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt8), POINTTOPoint(pt9));
+	//pGraphics->DrawLine(&penBlue, POINTTOPoint(pt9), POINTTOPoint(pt7));
 
-	//MoveToEx(dc, pt1.x, pt1.y, NULL);
-	//LineTo(dc, pt4.x, pt4.y);
-	//MoveToEx(dc, pt2.x, pt2.y, NULL);
-	//LineTo(dc, pt5.x, pt5.y);
-
-	//MoveToEx(dc, pt6.x, pt6.y, NULL);
-	//LineTo(dc, pt8.x, pt8.y);
-	//LineTo(dc, pt9.x, pt9.y);
-	//LineTo(dc, pt7.x, pt7.y);
-
-	POINT ptsTop[4];
-
-	EqualPoint(&ptsTop[0], &pt6);
-	EqualPoint(&ptsTop[1], &pt8);
-	EqualPoint(&ptsTop[2], &pt9);
-	EqualPoint(&ptsTop[3], &pt7);
-	HRGN rgnTop = CreatePolygonRgn(ptsTop, 4, WINDING);
+	//Point ptsLeft[4], ptsRight[3], ptsTop[4];
+	Point ptsLeft[4] = { POINTTOPoint(pt1), POINTTOPoint(pt3), POINTTOPoint(pt5), POINTTOPoint(pt4) };
+	Point ptsRight[3] = { POINTTOPoint(pt2), POINTTOPoint(pt3), POINTTOPoint(pt5) };
+	Point ptsTop[4] = { POINTTOPoint(pt6), POINTTOPoint(pt8), POINTTOPoint(pt9), POINTTOPoint(pt7) };
 
 	//给区域着色
-	HBRUSH hbTop = CreateSolidBrush(RGB(83, 83, 199));
-	HBRUSH hbLeft = CreateSolidBrush(RGB(146, 146, 192));
-	HBRUSH hbRight = CreateSolidBrush(RGB(123, 123, 192));
-
-	FillRgn(dc, rgnTop, hbTop);
-	FillRgn(dc, m_rgn, hbLeft);
-	FillRgn(dc, m_rgnTopRight, hbRight);
-
-	::DeleteObject(rgnTop);
-
-	::DeleteObject(hbTop);
-	::DeleteObject(hbLeft);
-	::DeleteObject(hbRight);
-
-	SelectObject(dc, oldbrush);
-	::DeleteObject(hbrush);
-	::DeleteObject(oldbrush);
-	//SelectObject(dc, oldpen);
-	//::DeleteObject(pen);
-	//::DeleteObject(oldpen);
+	SolidBrush hbTop(Color(83, 83, 199));
+	SolidBrush hbLeft(Color(146, 146, 192));
+	SolidBrush hbRight(Color(123, 123, 192));
+	
+	pGraphics->FillPolygon(&hbTop, ptsTop, 4);
+	pGraphics->FillPolygon(&hbLeft, ptsLeft, 4);
+	pGraphics->FillPolygon(&hbRight, ptsRight, 3);
 }
 
 //点的位置如下
@@ -1036,57 +962,19 @@ void CRealia::DrawArc(Graphics* pGraphics)
 	if (m_vecArcs.size() <= 0)
 		return;
 
-	const int iWidth = 30;
-	const int iHeight2 = 50;
-	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
-	HPEN oldpen = (HPEN)SelectObject(dc, pen);
+	Pen penBlue(Color(0, 0, 255), 2);
 
-	HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-	HBRUSH oldbrush = (HBRUSH)SelectObject(dc, hbrush);
-
-	POINT ptLeftTop, ptRightBottom, pt1, pt2;
-	double px1, px2, py1, py2, theta1, theta2;
+	POINT ptLeftTop;
+	double r;
+	REAL startAngle, sweepAngle;
 	for (std::vector<CArc>::iterator it = m_vecArcs.begin(); it != m_vecArcs.end(); it++) {
 		ptLeftTop.x = it->m_ptCenter.x - it->m_iRadius;
 		ptLeftTop.y = it->m_ptCenter.y - it->m_iRadius;
-		ptRightBottom.x = it->m_ptCenter.x + it->m_iRadius;
-		ptRightBottom.y = it->m_ptCenter.y + it->m_iRadius;
-		for (std::vector<POINT>::iterator lppt = it->m_vecPoints.begin(); lppt != it->m_vecPoints.end(); lppt++) {
-			EqualPoint(&pt1, &(*lppt));
-			EqualPoint(&pt2, &(*(++lppt)));
-			//圆弧函数只能逆时针画，所以处理麻烦，而且一旦两点很近就会出现两种情况，什么都没有或者画了整个圆
-			px1 = pt1.x - it->m_ptCenter.x;
-			py1 = pt1.y - it->m_ptCenter.y;
-			if (px1 == 0) {
-				theta1 = pi / 2;
-			}
-			else {
-				theta1 = atan(py1 / px1);
-			}
-
-			px2 = pt2.x - it->m_ptCenter.x;
-			py2 = pt2.y - it->m_ptCenter.y;
-			if (px2 == 0) {
-				theta2 = pi / 2;
-			}
-			else {
-				theta2 = atan(py2 / px2);
-			}
-
-			if ((theta2 - theta1 > 0 && theta2 - theta1 < pi / 2) || theta2 - theta1 <= - pi / 2) {
-				Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);
-			}
-			else if ((theta2 - theta1 < 0 && theta2 - theta1 > -pi / 2) || theta2 - theta1 >= pi / 2) {
-				Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt1.x, pt1.y, pt2.x, pt2.y);
-			}
-			//SetPixel(dc, lppt->x, lppt->y, RGB(0, 0, 255));
-		}
+		r = it->m_iRadius;
+		startAngle = it->m_fStartAngle;
+		sweepAngle = it->m_fSweepAngle1;
+		pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
+		sweepAngle = it->m_fSweepAngle2;
+		pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
 	}
-
-	SelectObject(dc, oldbrush);
-	::DeleteObject(hbrush);
-	::DeleteObject(oldbrush);
-	SelectObject(dc, oldpen);
-	::DeleteObject(pen);
-	::DeleteObject(oldpen);
 }

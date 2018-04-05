@@ -17,9 +17,6 @@ CRealiaWnd::~CRealiaWnd()
 	}
 	m_vecRealias.clear();
 
-	for (std::vector<CArc>::iterator it = m_vecArcs.begin(); it != m_vecArcs.end(); it++) {
-		it->m_vecPoints.clear();
-	}
 	m_vecArcs.clear();
 }
 
