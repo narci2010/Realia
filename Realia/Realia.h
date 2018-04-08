@@ -126,7 +126,6 @@ private:
 	void DrawGoniometer(Graphics* pGraphics, POINT pt1, POINT pt2, POINT pt3) const;
 	void DrawCompass(Graphics* pGraphics, POINT pt1, POINT pt2, const int iHeight);
 	void GetCompassPoints(const POINT pt1, const POINT pt2, LPPOINT lppt3, LPPOINT lppt4, LPPOINT lppt5, LPPOINT lppt6, LPPOINT lppt7, LPPOINT lppt8, LPPOINT lppt9);
-	void DrawArc(Graphics* pGraphics);
 };
 
 class CArc
@@ -162,6 +161,6 @@ public:
 	REAL m_fSweepAngle1;//顺时针旋转角度（正数）
 	REAL m_fSweepAngle2;//逆时针旋转角度（负数）
 	double m_dCurrentTheta;//当前鼠标坐标与圆心的直线的偏转角（弧度制）,用于确定旋转方向是逆时针还是顺时针所用
-};
 
-extern std::vector<CArc> m_vecArcs;
+	void DrawArc(Graphics* pGraphics) const;
+};

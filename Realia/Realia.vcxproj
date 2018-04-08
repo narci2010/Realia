@@ -146,11 +146,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FormulaWnd.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Realia.cpp" />
     <ClCompile Include="RealiaWnd.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FormulaWnd.h" />
     <ClInclude Include="Realia.h" />
     <ClInclude Include="RealiaWnd.h" />
     <ClInclude Include="resource.h" />

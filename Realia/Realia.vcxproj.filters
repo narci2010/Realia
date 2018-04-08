@@ -24,6 +24,9 @@
     <ClCompile Include="RealiaWnd.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="FormulaWnd.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Realia.h">
@@ -36,6 +39,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="RealiaWnd.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FormulaWnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

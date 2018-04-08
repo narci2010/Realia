@@ -57,6 +57,10 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	for (int i = 0; i < m_vecRealias.size(); i++)
 		m_vecRealias.at(i).Draw(&memGr);
 
+	//画圆弧
+	for (int i = 0; i < m_vecArcs.size(); i++)
+		m_vecArcs.at(i).DrawArc(&memGr);
+
 	//将内存画布画到窗口中
 	graphics.DrawImage(&memBmp, 0, 0, m_lWndWidth, m_lWndHeight);
 
@@ -140,6 +144,7 @@ UINT CRealiaWnd::DeleteRealia()
 		if (it->m_bSelect == TRUE) {
 			//此处erase存在问题，它总是把最后一个对象的m_rgn给释放掉，所以改为这里手动释放，不在析构函数中释放
 			DeleteObject(it->m_rgn);
+			DeleteObject(it->m_rgnTopRight);
 			m_vecRealias.erase(it);
 			InvalidateRect(m_hWnd, NULL, false);
 			UpdateWindow(m_hWnd);

@@ -31,3 +31,5 @@ private:
 
 	void DrawBackground(HDC dc, RECT rc);//画背景
 };
+
+extern std::vector<CArc> m_vecArcs;//存放圆规所画的所有圆弧

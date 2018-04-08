@@ -1,6 +1,10 @@
+// This is a part of the Microsoft Foundation Classes C++ library.
+// Copyright (C) XinJian Corporation
+// All rights reserved.
+// Author : Yanglei 2018/04/08
+// 这是根据MFC橡皮筋类改编而成，所画图形仅适用于直尺、三角尺、量角器、角度尺和圆规
+
 #include "Realia.h"
-#include <cstddef>
-#include <stdlib.h>
 
 AFX_STATIC_DATA HCURSOR _afxCursors[10] = { 0, };
 AFX_STATIC_DATA UINT rDrag = 5;//用于伸缩区的半径
@@ -10,7 +14,7 @@ AFX_STATIC_DATA TCHAR* pFont = _T("微软雅黑");//字体类型
 AFX_STATIC_DATA UINT iFontSize = 8;//用于字体大小
 
 std::vector<CArc> m_vecArcs;
-CArc *m_pArc = NULL;
+CArc *m_pArc = NULL;//指向当前圆弧
 
 CRealia::CRealia()
 {
@@ -105,12 +109,6 @@ void CRealia::Draw(Graphics* pGraphics)
 {
 	if (IsRegionNull())
 		return;
-	// set initial DC state
-	//如果传进来的是内存DC，SaveDC可能会出问题
-	//assert(SaveDC(pDC) != 0);
-	//SetMapMode(pDC, MM_TEXT);
-	//pDC->SetViewportOrg(0, 0);
-	//pDC->SetWindowOrg(0, 0);
 
 	//画内部区域
 	if (m_nStyle == CRealia::Ruler) {
@@ -131,10 +129,6 @@ void CRealia::Draw(Graphics* pGraphics)
 	else if (m_nStyle == CRealia::Compass) {
 		DrawCompass(pGraphics, m_ptBegin, m_ptEnd, m_iHeight);
 	}
-
-	DrawArc(pGraphics);
-
-	//assert(RestoreDC(pDC, -1));
 }
 
 int CRealia::HitTest(POINT point)
@@ -742,8 +736,6 @@ void CRealia::DrawProtractor(Graphics* pGraphics, POINT pt1, POINT pt2) const
 	startAngle = (theta + pi) * 180 / pi;
 	sweepAngle = 180;
 	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
-	//Arc函数从起点至终点逆时针画弧
-	//Arc(dc, ptLeftTop.x, ptLeftTop.y, ptRightBottom.x, ptRightBottom.y, pt2.x, pt2.y, pt1.x, pt1.y);//上半圆
 
 	//在量角器的圆心处画一个准心
 	pGraphics->DrawEllipse(&penBlue, Rect(ptCenter.x - rDrag, ptCenter.y - rDrag, rDrag * 2, rDrag * 2));
@@ -860,6 +852,29 @@ void CRealia::DrawCompass(Graphics* pGraphics, POINT pt1, POINT pt2, int iHeight
 	pGraphics->FillPolygon(&hbTop, ptsTop, 4);
 	pGraphics->FillPolygon(&hbLeft, ptsLeft, 4);
 	pGraphics->FillPolygon(&hbRight, ptsRight, 3);
+
+	//在圆心和旋转点各画一个半径为10的灰色圆圈
+	Pen penGray(Color(128, 128, 128), 1);
+	POINT ptLeftTop;
+	double r = 10;
+	ptLeftTop.x = pt1.x - r;
+	ptLeftTop.y = pt1.y - r;
+	pGraphics->DrawEllipse(&penGray, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2));
+	//ptLeftTop.x = pt3.x - r;
+	//ptLeftTop.y = pt3.y - r;
+	//pGraphics->DrawEllipse(&penGray, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2));
+
+	//显示半径
+	Font font(pFont, 12, FontStyleRegular, UnitPoint);
+	SolidBrush brush(Color(128, 128, 128));
+
+	POINT ptMiddle;
+	ptMiddle.x = (pt1.x + pt2.x) / 2;
+	ptMiddle.y = (pt1.y + pt2.y) / 2;
+	r = DistanceOfTwoPoint(pt1, pt2) / 50;
+	TCHAR mark[16];
+	swprintf_s(mark, _T("r = %.1f"), r);
+	pGraphics->DrawString(mark, lstrlen(mark), &font, PointF(ptMiddle.x, ptMiddle.y), &brush);
 }
 
 //点的位置如下
@@ -957,24 +972,19 @@ void CRealia::GetCompassPoints(POINT pt1, POINT pt2, LPPOINT lppt3, LPPOINT lppt
 }
 
 //画圆弧
-void CRealia::DrawArc(Graphics* pGraphics)
+void CArc::DrawArc(Graphics* pGraphics) const
 {
-	if (m_vecArcs.size() <= 0)
+	if (m_fStartAngle == -1)
 		return;
 
 	Pen penBlue(Color(0, 0, 255), 2);
 
 	POINT ptLeftTop;
-	double r;
+	double r = m_iRadius;
 	REAL startAngle, sweepAngle;
-	for (std::vector<CArc>::iterator it = m_vecArcs.begin(); it != m_vecArcs.end(); it++) {
-		ptLeftTop.x = it->m_ptCenter.x - it->m_iRadius;
-		ptLeftTop.y = it->m_ptCenter.y - it->m_iRadius;
-		r = it->m_iRadius;
-		startAngle = it->m_fStartAngle;
-		sweepAngle = it->m_fSweepAngle1;
-		pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
-		sweepAngle = it->m_fSweepAngle2;
-		pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), startAngle, sweepAngle);
-	}
+	ptLeftTop.x = m_ptCenter.x - m_iRadius;
+	ptLeftTop.y = m_ptCenter.y - m_iRadius;
+	
+	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), m_fStartAngle, m_fSweepAngle1);
+	pGraphics->DrawArc(&penBlue, Rect(ptLeftTop.x, ptLeftTop.y, r * 2, r * 2), m_fStartAngle, m_fSweepAngle2);
 }
