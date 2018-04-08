@@ -10,7 +10,6 @@ CFormulaWnd* pFormulaWnd = NULL;
 
 // 必须要进行前导声明
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK FormulaWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // 程序入口点
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
@@ -37,7 +36,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 	wcex.hIcon = NULL;
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = NULL;
-	wcex.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
+	wcex.lpszMenuName = MAKEINTRESOURCE(IDR_MENU_REALIA);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = NULL;
 
@@ -128,57 +127,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			if (pFormulaWnd == NULL) {
 				pFormulaWnd = CFormulaWnd::Instance();
 			}
-			// 类名
-			TCHAR* szWindowClass = _T("Formula");
-			TCHAR* szTitle = _T("公式编辑器");
 
-			// 设计窗口类
-			WNDCLASSEX wcex;
-			wcex.cbSize = sizeof(WNDCLASSEX);;
-			wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-			wcex.lpfnWndProc = FormulaWndProc;
-			wcex.cbClsExtra = 0;
-			wcex.cbWndExtra = 0;
-			wcex.hInstance = hInst;
-			wcex.hIcon = NULL;
-			wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-			wcex.hbrBackground = NULL;
-			wcex.lpszMenuName = MAKEINTRESOURCE(IDR_MENU_FORMULA);
-			wcex.lpszClassName = szWindowClass;
-			wcex.hIconSm = NULL;
+			CPaintManagerUI::SetInstance(hInst);
+			CPaintManagerUI::SetResourcePath(CPaintManagerUI::GetInstancePath());
 
-			// 注册窗口类
-			RegisterClassEx(&wcex);
+			HRESULT Hr = ::CoInitialize(NULL);
+			if (FAILED(Hr)) return false;
 
-			// 创建窗口
-			HWND phWnd = CreateWindow(
-				szWindowClass,		//类名，要和刚才注册的一致
-				szTitle,  	        //窗口标题文字
-				WS_OVERLAPPEDWINDOW,//窗口外观样式
-				CW_USEDEFAULT,		//窗口相对于父级的X坐标
-				CW_USEDEFAULT,		//窗口相对于父级的Y坐标
-				CW_USEDEFAULT,		//窗口的宽度
-				CW_USEDEFAULT,		//窗口的高度
-				hWnd,				//没有父窗口，为NULL
-				NULL,				//没有菜单，为NULL
-				hInst,		    	//当前应用程序的实例句柄
-				NULL);				//没有附加数据，为NULL
-			if (!phWnd)
-			{
-				return FALSE;
-			}
+			pFormulaWnd->Create(hWnd, _T("公式编辑器"), WS_OVERLAPPEDWINDOW, 0, 100, 100, 800, 600);
 
 			pFormulaWnd->SetParentWnd(hWnd);
-			pFormulaWnd->InitWindow(phWnd);
 
 			// 显示窗口
-			ShowWindow(pFormulaWnd->GetSelfWnd(), SW_SHOW);
+			pFormulaWnd->CenterWindow();
+			ShowWindow(*pFormulaWnd, SW_SHOW);
+
+			::CoUninitialize();
 
 			// 更新窗口
-			UpdateWindow(pFormulaWnd->GetSelfWnd());
-
-			//禁用父窗口
-			EnableWindow(pFormulaWnd->GetParentWnd(), false);
+			UpdateWindow(*pFormulaWnd);			
 		}
 			break;
 		case IDM_DEL:
@@ -230,95 +197,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		return 0;
-	default:
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	}
-	return 0;
-}
-
-//
-//  函数: FormulaWndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  目的: 处理子窗口的消息。
-//
-//  WM_COMMAND	- 处理应用程序菜单
-//  WM_PAINT	- 绘制窗口
-//  WM_DESTROY	- 发送退出消息并返回
-//
-LRESULT CALLBACK FormulaWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	HDC hdc;
-	POINT point;
-	switch (uMsg)
-	{
-	case WM_CREATE:
-	{
-		CreateWindow(_T("button"), _T("新建"), WS_CHILD | WS_VISIBLE, 5, 5, 50, 20,
-			hWnd, (HMENU)IDC_BUTTON_NUMBER, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-		CreateWindow(_T("button"), _T("->|"), WS_CHILD | WS_VISIBLE, 60, 5, 50, 20,
-			hWnd, (HMENU)IDC_BUTTON_DELETE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-		CreateWindow(_T("button"), _T("|<-"), WS_CHILD | WS_VISIBLE, 115, 5, 50, 20,
-			hWnd, (HMENU)IDC_BUTTON_BAKSPACE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-		CreateWindow(_T("combobox"), NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, 170, 5, 50, 20,
-			hWnd, (HMENU)IDC_BUTTON_BAKSPACE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-	}
-		break;
-	case WM_COMMAND:
-		int wmId, wmEvent;
-		wmId = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// 分析菜单选择:
-		switch (wmId)
-		{
-		case IDC_BUTTON_NUMBER:
-			MessageBox(NULL, L"输入为空请重新输入", L"提示", NULL);
-			break;
-		//case IDM_DEL:
-		//	m_CRealiaWnd.DeleteRealia();
-		//	break;
-		//case IDCLOSE:
-		//	DestroyWindow(hWnd);
-			break;
-		default:
-			return DefWindowProc(hWnd, uMsg, wParam, lParam);
-		}
-		break;
-	case WM_PAINT:
-		PAINTSTRUCT ps;
-		hdc = BeginPaint(hWnd, &ps);
-		// TODO: 在此添加任意绘图代码...
-
-
-		EndPaint(hWnd, &ps);
-		break;
-	case WM_LBUTTONDOWN:
-		point.x = LOWORD(lParam);
-		point.y = HIWORD(lParam);
-		//m_CRealiaWnd.OnLButtonDown(point);
-		break;
-	case WM_LBUTTONUP:
-		point.x = LOWORD(lParam);
-		point.y = HIWORD(lParam);
-		//m_CRealiaWnd.OnLButtonUp(point);
-		break;
-	case WM_MOUSEMOVE:
-		point.x = LOWORD(lParam);
-		point.y = HIWORD(lParam);
-		//m_CRealiaWnd.OnMouseMove(point);
-		break;
-	case WM_KEYDOWN:
-		if (wParam == VK_ESCAPE)
-		{
-			DestroyWindow(pFormulaWnd->GetSelfWnd());
-			return 0;
-		}
-		break;
-	case WM_DESTROY:
-		//EnableWindow(GetParent(hWnd), true);
-		EnableWindow(pFormulaWnd->GetParentWnd(), true);
-		//ShowWindow(pFormulaWnd->GetParentWnd(), SW_SHOW);
-		UpdateWindow(pFormulaWnd->GetParentWnd());
 		return 0;
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
