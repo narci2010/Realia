@@ -145,7 +145,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			::CoUninitialize();
 
 			// ¸üÐÂ´°¿Ú
-			UpdateWindow(*pFormulaWnd);			
+			//UpdateWindow(*pFormulaWnd);			
 		}
 			break;
 		case IDM_DEL:

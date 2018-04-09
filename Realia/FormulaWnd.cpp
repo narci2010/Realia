@@ -85,7 +85,8 @@ void CFormulaWnd::InitWindow()
 	EDITSTREAM es;
 	es.dwCookie = (DWORD_PTR)hRtfFile;
 	es.pfnCallback = streamInCallback;
-	m_pRichEdit->StreamIn(SF_RTF, es);
+	LRESULT lResult;
+	lResult = m_pRichEdit->StreamIn(SF_RTF, es);
 
 	CloseHandle(hRtfFile);
 }
