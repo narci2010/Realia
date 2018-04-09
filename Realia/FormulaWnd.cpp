@@ -2,6 +2,8 @@
 #include "stdafx.h"
 #include "FormulaWnd.h"
 
+const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
+
 CFormulaWnd* CFormulaWnd::m_pInstance = NULL;
 
 CFormulaWnd::CFormulaWnd()
@@ -11,7 +13,7 @@ CFormulaWnd::CFormulaWnd()
 
 CFormulaWnd::~CFormulaWnd()
 {
-	delete this;
+	
 }
 
 CFormulaWnd* CFormulaWnd::Instance()
@@ -61,10 +63,31 @@ CDuiString CFormulaWnd::GetSkinFolder()
 //	return UILIB_ZIPRESOURCE;
 //}
 
+static DWORD CALLBACK streamInCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG cb, LONG *pcb)
+{
+	ReadFile((HANDLE)dwCookie, pbBuff, cb, (LPDWORD)pcb, NULL);//读取数据
+	return 0;
+}
+
 void CFormulaWnd::InitWindow()
 {
-	::GetClientRect(m_hWnd, &m_rcWindow);
-	::SetWindowPos(GetHWND(), NULL, m_rcWindow.left, m_rcWindow.top, m_rcWindow.right - m_rcWindow.left, m_rcWindow.bottom - m_rcWindow.top, SWP_NOZORDER);
+	m_pRichEdit = static_cast<CRichEditUI*>(m_PaintManager.FindControl(pFormulaRichEditControlName));
+	if (m_pRichEdit == NULL)
+		Close();
+
+	CDuiString strRtfPath = m_PaintManager.GetInstancePath();
+	strRtfPath.Append(_T("limit.rtf"));
+
+	HANDLE hRtfFile = CreateFile(strRtfPath.GetData(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hRtfFile == INVALID_HANDLE_VALUE)
+		return;
+	
+	EDITSTREAM es;
+	es.dwCookie = (DWORD_PTR)hRtfFile;
+	es.pfnCallback = streamInCallback;
+	m_pRichEdit->StreamIn(SF_RTF, es);
+
+	CloseHandle(hRtfFile);
 }
 
 void CFormulaWnd::OnFinalMessage(HWND hWnd)
@@ -73,6 +96,22 @@ void CFormulaWnd::OnFinalMessage(HWND hWnd)
 	EnableWindow(m_hWndParent, true);
 
 	__super::OnFinalMessage(hWnd);
+
+	//此处有bug，pRoot指向的空间已释放，但是pRoot != NULL，所以单例模式总存在问题
+	//CControlUI* pRoot = m_PaintManager.GetRoot();
+	//if (pRoot != NULL) {
+	//	pRoot->Delete();
+	//	pRoot = NULL;
+	//}
+	//DestroyWindow(m_hWnd);
+	delete this;
+	m_pInstance = NULL;
+}
+
+LRESULT CFormulaWnd::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	bHandled = FALSE;
+	return 0;
 }
 
 void CFormulaWnd::OnPrepare(TNotifyUI& msg)
@@ -86,4 +125,14 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 		OnPrepare(msg);
 	}
 	return __super::Notify(msg);
+}
+
+void CFormulaWnd::OnExit(TNotifyUI& msg)
+{
+	Close();
+}
+
+void CFormulaWnd::OnTimer(TNotifyUI& msg)
+{
+
 }

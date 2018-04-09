@@ -1,20 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Window caption="0,0,0,32" sizebox="4,4,4,4">
-	<VerticalLayout bkcolor="#FFF0F0F0">
+	<Font shared="true" id="0" name="幼圆" size="12" default="true" />
+	<Font shared="true" id="1" name="微软雅黑" size="18" />
+	<Default shared="true" name="VScrollBar" value="button1normalimage=&quot;file='scrollbar.bmp' source='0,90,16,106' mask='#FFFF00FF'&quot; button1hotimage=&quot;file='scrollbar.bmp' source='18,90,34,106' mask='#FFFF00FF'&quot; button1pushedimage=&quot;file='scrollbar.bmp' source='36,90,52,106' mask='#FFFF00FF'&quot; button1disabledimage=&quot;file='scrollbar.bmp' source='54,90,70,106' mask='#FFFF00FF'&quot; button2normalimage=&quot;file='scrollbar.bmp' source='0,108,16,124' mask='#FFFF00FF'&quot; button2hotimage=&quot;file='scrollbar.bmp' source='18,108,34,124' mask='#FFFF00FF'&quot; button2pushedimage=&quot;file='scrollbar.bmp' source='36,108,52,124' mask='#FFFF00FF'&quot; button2disabledimage=&quot;file='scrollbar.bmp' source='54,108,70,124' mask='#FFFF00FF'&quot; thumbnormalimage=&quot;file='scrollbar.bmp' source='0,126,16,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbhotimage=&quot;file='scrollbar.bmp' source='18,126,34,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbpushedimage=&quot;file='scrollbar.bmp' source='36,126,52,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; thumbdisabledimage=&quot;file='scrollbar.bmp' source='54,126,70,142' corner='2,2,2,2' mask='#FFFF00FF'&quot; railnormalimage=&quot;file='scrollbar.bmp' source='0,144,16,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; railhotimage=&quot;file='scrollbar.bmp' source='18,144,34,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; railpushedimage=&quot;file='scrollbar.bmp' source='36,144,52,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; raildisabledimage=&quot;file='scrollbar.bmp' source='54,144,70,160' corner='2,2,2,2' mask='#FFFF00FF'&quot; bknormalimage=&quot;file='scrollbar.bmp' source='0,162,16,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkhotimage=&quot;file='scrollbar.bmp' source='18,162,34,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkpushedimage=&quot;file='scrollbar.bmp' source='36,162,52,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; bkdisabledimage=&quot;file='scrollbar.bmp' source='54,162,70,178' corner='2,2,2,2' mask='#FFFF00FF'&quot; " />
+	<VerticalLayout bkcolor="#FFFFFFFF" bordersize="1" bordercolor="#006B93B2" inset="1,1,1,1">
 		<!-- 标题栏区 -->
-        <HorizontalLayout height="32" bkcolor="#FFE6E6DC" bkcolor2="#FFAAAAA0"> <!-- 标题栏背景色 bkcolor、bkcolor2、bkcolor3分别是渐变色的三个值-->         
-            <VerticalLayout /> <!-- 占空位，占据左边所有的空位-->
-            <VerticalLayout width="77"> <!-- 右边三个控件所占的宽度-->
-                <Button name="minbtn"   tooltip="最小化" float="true" pos="0,5,22,24"  width="23" normalimage=" file='SysBtn\MinNormal.bmp' " hotimage=" file='SysBtn\MinFocus.bmp' " pushedimage=" file='SysBtn\MinFocus.bmp' "/>
-                <Button name="maxbtn"   tooltip="最大化" float="true" pos="22,5,44,24" width="23" normalimage=" file='SysBtn\MaxNormal.bmp' " hotimage=" file='SysBtn\MaxFocus.bmp' " pushedimage=" file='SysBtn\MaxFocus.bmp' " />
-                <Button name="restorebtn" visible="false" tooltip="还原" float="true" pos="22,5,44,24" width="23" normalimage=" file='SysBtn\StoreNormal.bmp' " hotimage=" file='SysBtn\StoreFocus.bmp' " pushedimage=" file='SysBtn\StoreFocus.bmp' " />
-                <Button name="closebtn" tooltip="关闭"   float="true" pos="44,5,74,24" width="28" normalimage=" file='SysBtn\CloseNormal.bmp' " hotimage=" file='SysBtn\CloseFocus.bmp' " pushedimage=" file='SysBtn\CloseFocus.bmp' "/>
-            </VerticalLayout>      
+        <HorizontalLayout height="24" bkcolor="#FFFFFFFF" bkcolor2="#006B93B2">       
+            <Label name="" text="  公式编辑器" tooltip="" float="false" width="80" bordersize="1" bkcolor="#FFB9D1EF" textcolor="#FFFFFFFF" disabledtextcolor="#FFA7A6AA"/>
+			<control />
+			<Button name="closebtn" text="" tooltip="" float="false" bordersize="0" width="41" height="21" bkcolor="#FFB9D1EF" bkcolor2="#FF757676" bordercolor="#FF000000" maxheight="20" maxwidth="41" normalimage="file='common.bmp' source='0,60,41,80'" hotimage="file='common.bmp' source='41,60,82,80'" pushedimage="file='common.bmp' source='82,60,123,80'"  />    
         </HorizontalLayout>
         
         <!-- 客户区 -->
-        <HorizontalLayout>
-        <Button name="btnHello" text="Hello World"/>
-    </HorizontalLayout>
+        <HorizontalLayout height="30" bkcolor="#FFFBEEDF" inset="2,2,2,2"><!-- 水平工具栏 -->
+			<control width="30"/>
+			<Button name="btnNew" text="新建" tooltip="新建" width="30"/>
+			<Button name="btnDelete" text="->|" tooltip="向后删除" width="30"/>
+			<Button name="btnBakspace" text="|<-" tooltip="向前删除" width="30"/>
+			<Combo name="cmbfontsize" width="56" padding="2,0,0,0" normalimage="cmbFontSizeNormal.png" hotimage="cmbFontSizeHot.png" pushedimage="cmbFontSizeHot.png" textpadding="4,0,0,0" itemtextpadding="4,0,0,0" vscrollbar="true">
+				<ListLabelElement text="6"/>
+				<ListLabelElement text="7"/>
+				<ListLabelElement text="8" selected="true"/>
+				<ListLabelElement text="9"/>
+				<ListLabelElement text="10"/>
+				<ListLabelElement text="11"/>
+				<ListLabelElement text="12"/>
+				<ListLabelElement text="13"/>
+				<ListLabelElement text="14"/>
+				<ListLabelElement text="15"/>
+				<ListLabelElement text="16"/>
+				<ListLabelElement text="17"/>
+				<ListLabelElement text="18"/>
+			</Combo>
+			<Button name="btnColor" text="颜色" width="30"/>
+			<Button name="btnNum" text="+" tooltip="数字" width="30"/>
+			<Button name="btnColor" text="&" tooltip="符号" width="30"/>
+			<Button name="btnColor" text="α" tooltip="特殊符号" width="30"/>
+			<Button name="btnColor" text="A" tooltip="字母" width="30"/>
+			<Button name="btnColor" text="" tooltip="手写体和花体" width="30"/>
+			<Button name="btnColor" text="lim" tooltip="极限" width="30"/>
+			<Button name="btnColor" text="log" tooltip="对数" width="30"/>
+			<Button name="btnColor" text="T" tooltip="文本" width="30"/>
+		</HorizontalLayout>
+		
+		<HorizontalLayout>
+			<VerticalLayout width="30" bkcolor="#FFFBEEDF"><!-- 垂直工具栏 -->
+				<Button name="btnColor" text="∈" tooltip="特殊符号和大型运算符" height="30"/>
+				<Button name="btnColor" text="e^x" tooltip="幂数" height="30"/>
+				<Button name="btnColor" text="√" tooltip="根式" height="30"/>
+				<Button name="btnColor" text="括号" tooltip="括号" height="30"/>
+				<Button name="btnColor" text="∫" tooltip="积分" height="30"/>
+				<Button name="btnColor" text="∑" tooltip="求和" height="30"/>
+				<Button name="btnColor" text="分式" tooltip="分式" height="30"/>
+				<Button name="btnColor" text="矩阵" tooltip="矩阵" height="30"/>
+				<Button name="btnColor" text="箭头" tooltip="箭头模块" height="30"/>
+				<Button name="btnColor" text="导数" tooltip="导数符号" height="30"/>
+				<Button name="btnColor" text="乘积" tooltip="乘积副积和交集并集" height="30"/>
+			</VerticalLayout>
+			<VerticalLayout><!-- 文本显示区 -->
+				<RichEdit name="reFormula" float="true" pos="50,50,600,400" width="600" height="400" minwidth="30" minheight="60" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/>
+			</VerticalLayout>
+		</HorizontalLayout>
+		
+		<HorizontalLayout height="30" bkcolor="#FFFBEEDF"><!-- 三角函数区 -->
+			<control width="30"/>
+			<Button name="btnNew" text="sin" tooltip="三角函数1" width="50"/>
+			<Button name="btnNew" text="arcsin" tooltip="三角函数2" width="50"/>
+			<Button name="btnNew" text="sin-1" tooltip="三角函数3" width="50"/>
+			<Button name="btnNew" text="keyword" tooltip="关键字" width="50"/>
+			<Button name="btnNew" text="快捷键" width="50"/>
+		</HorizontalLayout>
+		
+		<HorizontalLayout height="30" bkcolor="#FFFBEEDF"><!-- 确定按钮区 -->
+			<control />
+			<Button name="btnHello" text="确定" width="50"/>
+		</HorizontalLayout>
 	</VerticalLayout>
 </Window>

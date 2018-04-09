@@ -124,9 +124,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			m_CRealiaWnd.SetRealiaType(6);
 			break;
 		case IDM_FORMULA: {
-			if (pFormulaWnd == NULL) {
+			//if (pFormulaWnd == NULL) {
 				pFormulaWnd = CFormulaWnd::Instance();
-			}
+			//}
 
 			CPaintManagerUI::SetInstance(hInst);
 			CPaintManagerUI::SetResourcePath(CPaintManagerUI::GetInstancePath());
