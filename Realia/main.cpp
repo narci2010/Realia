@@ -20,6 +20,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 	//StartupInput.GdiplusVersion = 1;
 	if (GdiplusStartup(&m_gdiplusToken, &StartupInput, NULL))MessageBox(0, TEXT("GdiPlus开启失败"), TEXT("错误"), MB_ICONERROR);
 
+	HRESULT Hr = ::CoInitialize(NULL);
+	if (FAILED(Hr)) return false;
+	Hr = ::OleInitialize(NULL);
+	if (FAILED(Hr)) return false;
+
+	HINSTANCE hInstRich = ::LoadLibrary(_T("Riched20.dll"));
+
 	// 类名
 	TCHAR* szWindowClass = _T("Realia");
 
@@ -77,6 +84,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 		DispatchMessage(&msg);
 	}
 
+	::FreeLibrary(hInstRich);
+
+	::OleUninitialize();
+	::CoUninitialize();
+
 	//GDI+关闭  
 	GdiplusShutdown(m_gdiplusToken);//可以把这个写在消息循环后面，程序退出就销毁，或者在不需要GDI+时调用，比如GDI+窗口的WM_DESTROY消息里调用
 
@@ -131,9 +143,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			CPaintManagerUI::SetInstance(hInst);
 			CPaintManagerUI::SetResourcePath(CPaintManagerUI::GetInstancePath());
 
-			HRESULT Hr = ::CoInitialize(NULL);
-			if (FAILED(Hr)) return false;
-
 			pFormulaWnd->Create(hWnd, _T("公式编辑器"), WS_OVERLAPPEDWINDOW, 0, 100, 100, 800, 600);
 
 			pFormulaWnd->SetParentWnd(hWnd);
@@ -141,8 +150,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// 显示窗口
 			pFormulaWnd->CenterWindow();
 			ShowWindow(*pFormulaWnd, SW_SHOW);
-
-			::CoUninitialize();
 
 			// 更新窗口
 			//UpdateWindow(*pFormulaWnd);			

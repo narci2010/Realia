@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "FormulaWnd.h"
+#include "RichEditUtil.h"
 
 const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
 
@@ -77,18 +78,8 @@ void CFormulaWnd::InitWindow()
 
 	CDuiString strRtfPath = m_PaintManager.GetInstancePath();
 	strRtfPath.Append(_T("limit.rtf"));
-
-	HANDLE hRtfFile = CreateFile(strRtfPath.GetData(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hRtfFile == INVALID_HANDLE_VALUE)
-		return;
-	
-	EDITSTREAM es;
-	es.dwCookie = (DWORD_PTR)hRtfFile;
-	es.pfnCallback = streamInCallback;
-	LRESULT lResult;
-	lResult = m_pRichEdit->StreamIn(SF_RTF, es);
-
-	CloseHandle(hRtfFile);
+	ReadFileByStreamIn(m_pRichEdit, strRtfPath.GetData());
+	//InsertObject(m_pRichEdit, strRtfPath.GetData());
 }
 
 void CFormulaWnd::OnFinalMessage(HWND hWnd)
