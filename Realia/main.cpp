@@ -143,13 +143,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			CPaintManagerUI::SetInstance(hInst);
 			CPaintManagerUI::SetResourcePath(CPaintManagerUI::GetInstancePath());
 
-			pFormulaWnd->Create(hWnd, _T("公式编辑器"), WS_OVERLAPPEDWINDOW, 0, 100, 100, 800, 600);
+			pFormulaWnd->Create(hWnd, _T("公式编辑器"), WS_OVERLAPPEDWINDOW, 0, 0, 0, 800, 600);
 
 			pFormulaWnd->SetParentWnd(hWnd);
 
 			// 显示窗口
 			pFormulaWnd->CenterWindow();
 			ShowWindow(*pFormulaWnd, SW_SHOW);
+			//CPaintManagerUI::MessageLoop();
 
 			// 更新窗口
 			//UpdateWindow(*pFormulaWnd);			

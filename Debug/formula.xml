@@ -58,7 +58,7 @@
 				<Button name="btnColor" text="乘积" tooltip="乘积副积和交集并集" height="30"/>
 			</VerticalLayout>
 			<VerticalLayout><!-- 文本显示区 -->
-				<RichEdit name="reFormula" float="true" pos="50,50,600,400" width="600" height="400" minwidth="30" minheight="60" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/>
+				<RichEdit name="reFormula" float="true" pos="20,20,20,20" minwidth="30" minheight="30" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/>
 			</VerticalLayout>
 		</HorizontalLayout>
 		
