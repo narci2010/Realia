@@ -34,8 +34,8 @@
 			</Combo>
 			<Button name="btnColor" text="颜色" width="30"/>
 			<Button name="btnNum" text="+" tooltip="数字" width="30"/>
-			<Button name="btnColor" text="&" tooltip="符号" width="30"/>
-			<Button name="btnColor" text="α" tooltip="特殊符号" width="30"/>
+			<Button name="btnSign" text="&" tooltip="符号" width="30"/>
+			<Button name="btnSpecialSign" text="α" tooltip="特殊符号" width="30"/>
 			<Button name="btnColor" text="A" tooltip="字母" width="30"/>
 			<Button name="btnColor" text="" tooltip="手写体和花体" width="30"/>
 			<Button name="btnColor" text="lim" tooltip="极限" width="30"/>
@@ -58,9 +58,11 @@
 				<Button name="btnColor" text="乘积" tooltip="乘积副积和交集并集" height="30"/>
 			</VerticalLayout>
 			<VerticalLayout><!-- 文本显示区 -->
-				<RichEdit name="reFormula" float="true" pos="20,20,20,20" minwidth="30" minheight="30" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/>
+				<control />
+				<!--RichEdit name="reFormula" float="true" pos="20,20,20,20" minwidth="30" minheight="30" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/-->
 			</VerticalLayout>
 		</HorizontalLayout>
+		<Edit name="editInput" float="true" pos="0, 0, 0, 0" bordercolor="#FF0000" bordersize="1"/>
 		
 		<HorizontalLayout height="30" bkcolor="#FFFBEEDF"><!-- 三角函数区 -->
 			<control width="30"/>

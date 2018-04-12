@@ -4,12 +4,19 @@
 #include "RichEditUtil.h"
 
 const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
+const TCHAR* const pFormulaEditInputControlName = _T("editInput");
 
 CFormulaWnd* CFormulaWnd::m_pInstance = NULL;
 
 CFormulaWnd::CFormulaWnd()
 {
+	::ZeroMemory(&m_rcWindow, sizeof(m_rcWindow));
+	m_lWndWidth = 0;
+	m_lWndHeight = 0;
+	::ZeroMemory(&m_rcFormula, sizeof(m_rcFormula));
+	::ZeroMemory(&m_rcEdit, sizeof(m_rcEdit));
 	m_bWindowInit = false;
+	m_pBinTree = new CBinTree;
 }
 
 CFormulaWnd::~CFormulaWnd()
@@ -64,41 +71,41 @@ CDuiString CFormulaWnd::GetSkinFolder()
 //	return UILIB_ZIPRESOURCE;
 //}
 
-static DWORD CALLBACK streamInCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG cb, LONG *pcb)
-{
-	ReadFile((HANDLE)dwCookie, pbBuff, cb, (LPDWORD)pcb, NULL);//读取数据
-	return 0;
-}
-
 void CFormulaWnd::InitWindow()
 {
-	m_pRichEdit = static_cast<CRichEditUI*>(m_PaintManager.FindControl(pFormulaRichEditControlName));
-	if (m_pRichEdit == NULL)
-		Close();
-
 	m_pBtnNew = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNew")));
 	m_pBtnNum = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNum")));
+	m_pBtnSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSign")));
+	m_pBtnSpecialSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSpecialSign")));
+
+	m_pEditInput = static_cast<CEditUI*>(m_PaintManager.FindControl(pFormulaEditInputControlName));
+	if (m_pEditInput == NULL)
+		Close();
 
 	GetClientRect(m_hWnd, &m_rcWindow);
 	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
 	m_lWndHeight = m_rcWindow.bottom - m_rcWindow.top;
 	m_rcEdit = m_rcWindow;
-	m_rcEdit.left += 20;
-	m_rcEdit.top += 20;
-	m_rcEdit.right -= 50;
-	m_rcEdit.bottom -= 134;
-	m_pRichEdit->SetPos(m_rcEdit);
-
-	//CDuiString strRtfPath = m_PaintManager.GetInstancePath();
-	//strRtfPath.Append(_T("limit.rtf"));
-	//ReadFileByStreamIn(m_pRichEdit, strRtfPath.GetData());
-	//InsertObject(m_pRichEdit, strRtfPath.GetData());
+	m_rcFormula = m_rcWindow;
+	m_rcFormula.left += 50;
+	m_rcFormula.top += 74;
+	m_rcFormula.right -= 20;
+	m_rcFormula.bottom -= 80;
+	m_rcEdit.left += 50;
+	m_rcEdit.top += 74;
+	m_rcEdit.right = m_rcEdit.left + 20;
+	m_rcEdit.bottom = m_rcEdit.top + 20;
+	m_pEditInput->SetPos(m_rcEdit);
+	m_pEditInput->SetFocus();
 }
 
 void CFormulaWnd::OnFinalMessage(HWND hWnd)
 {
 	//启用父窗口
 	EnableWindow(m_hWndParent, true);
+
+	delete m_pBinTree;
+	m_pBinTree = NULL;
 
 	__super::OnFinalMessage(hWnd);
 
@@ -122,6 +129,16 @@ LRESULT CFormulaWnd::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (uMsg == WM_LBUTTONDOWN) {
+		POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+		if (PtInRect(&m_rcFormula, pt)) {
+			m_rcEdit.left = pt.x;
+			m_rcEdit.top = pt.y;
+			m_rcEdit.right = m_rcEdit.left + 20;
+			m_rcEdit.bottom = m_rcEdit.top + 20;
+			m_pEditInput->SetPos(m_rcEdit);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
 	}
 	else if (uMsg == WM_PAINT) {
 		if (m_bWindowInit) {
@@ -130,19 +147,11 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			assert(SaveDC(hdc) != 0);
 
-			//m_PaintManager.GetRoot()->Paint(hdc, m_rcWindow, NULL);
+			m_PaintManager.GetRoot()->Paint(hdc, m_rcWindow, NULL);
+			m_pEditInput->SetFocus();
 
-			HPEN pen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-			HPEN oldpen = (HPEN)SelectObject(hdc, pen);
-
-			HBRUSH hbrush = (HBRUSH)GetStockObject(NULL_BRUSH);
-			SelectObject(hdc, hbrush);
-			Rectangle(hdc, 40, 80, 200, 200);
-			DeleteObject(hbrush);
-
-			SelectObject(hdc, oldpen);
-			::DeleteObject(pen);
-			::DeleteObject(oldpen);
+			//画公式
+			m_pBinTree->DrawTree(hdc);
 
 			RestoreDC(hdc, -1);
 
@@ -165,6 +174,32 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 	}
 	else if (msg.sType == _T("click")) {
 		if (msg.pSender == m_pBtnNew) {
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+		else if (msg.pSender == m_pBtnNum) {
+			AttachThreadInput(GetCurrentThreadId(), ::GetWindowThreadProcessId(m_hWnd, NULL), TRUE);
+			POINT point;
+			GetCaretPos(&point);
+			m_pBinTree->CreateNode(NT_PLUS, point);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+		else if (msg.pSender == m_pBtnSign) {
+			POINT point;
+			GetCaretPos(&point);
+			m_pBinTree->CreateNode(NT_EQUATION, point);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+		else if (msg.pSender == m_pBtnSpecialSign) {
+
+		}
+	}
+	else if (msg.sType == _T("textchanged")) {
+		if (msg.pSender == m_pEditInput) {
+			m_rcEdit.right += 20;
+			m_pEditInput->SetPos(m_rcEdit);
 			InvalidateRect(m_hWnd, &m_rcWindow, true);
 			UpdateWindow(m_hWnd);
 		}

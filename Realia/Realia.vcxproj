@@ -152,15 +152,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BinTree.cpp" />
     <ClCompile Include="FormulaWnd.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="Realia.cpp" />
     <ClCompile Include="RealiaWnd.cpp" />
     <ClCompile Include="RichEditUtil.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BinTree.h" />
     <ClInclude Include="FormulaWnd.h" />
+    <ClInclude Include="Node.h" />
     <ClInclude Include="Realia.h" />
     <ClInclude Include="RealiaWnd.h" />
     <ClInclude Include="resource.h" />

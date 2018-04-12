@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BinTree.h"
+
 class CFormulaWnd : public WindowImplBase
 {
 public:
@@ -37,12 +39,18 @@ private:
 	RECT m_rcWindow;//窗口矩形
 	LONG m_lWndWidth;//窗口宽度
 	LONG m_lWndHeight;//窗口高度
+	RECT m_rcFormula;
 	RECT m_rcEdit;//公式编辑区域
 
 	bool m_bWindowInit;
 
-	CRichEditUI* m_pRichEdit;
+	// pointer to the binary tree data structure
+	CBinTree* m_pBinTree;
+
+	CRichEditUI* m_pEditInput;
 	CButtonUI* m_pBtnNew;
-	CButtonUI* m_pBtnNum;
 	CButtonUI* m_pBtnColor;
+	CButtonUI* m_pBtnNum;
+	CButtonUI* m_pBtnSign;
+	CButtonUI* m_pBtnSpecialSign;
 };
