@@ -78,7 +78,7 @@ void CFormulaWnd::InitWindow()
 	m_pBtnSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSign")));
 	m_pBtnSpecialSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSpecialSign")));
 
-	m_pEditInput = static_cast<CEditUI*>(m_PaintManager.FindControl(pFormulaEditInputControlName));
+	m_pEditInput = static_cast<CRichEditUI*>(m_PaintManager.FindControl(pFormulaEditInputControlName));
 	if (m_pEditInput == NULL)
 		Close();
 
@@ -93,7 +93,7 @@ void CFormulaWnd::InitWindow()
 	m_rcFormula.bottom -= 80;
 	m_rcEdit.left += 50;
 	m_rcEdit.top += 74;
-	m_rcEdit.right = m_rcEdit.left + 20;
+	m_rcEdit.right = m_rcEdit.left;
 	m_rcEdit.bottom = m_rcEdit.top + 20;
 	m_pEditInput->SetPos(m_rcEdit);
 	m_pEditInput->SetFocus();
@@ -131,13 +131,19 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	if (uMsg == WM_LBUTTONDOWN) {
 		POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		if (PtInRect(&m_rcFormula, pt)) {
-			m_rcEdit.left = pt.x;
-			m_rcEdit.top = pt.y;
-			m_rcEdit.right = m_rcEdit.left + 20;
-			m_rcEdit.bottom = m_rcEdit.top + 20;
-			m_pEditInput->SetPos(m_rcEdit);
-			InvalidateRect(m_hWnd, &m_rcWindow, true);
-			UpdateWindow(m_hWnd);
+			RECT rc;
+			int iUpdateStatus;
+			m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc);
+
+			if (iUpdateStatus == 1) {
+				m_rcEdit.left = rc.left;
+				m_rcEdit.top = rc.top;
+				m_rcEdit.right = m_rcEdit.left;
+				m_rcEdit.bottom = m_rcEdit.top + 20;
+				m_pEditInput->SetPos(m_rcEdit);
+				InvalidateRect(m_hWnd, &m_rcWindow, true);
+				UpdateWindow(m_hWnd);
+			}
 		}
 	}
 	else if (uMsg == WM_PAINT) {
@@ -156,6 +162,7 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			RestoreDC(hdc, -1);
 
 			EndPaint(m_hWnd, &ps);
+			return 0;
 		}
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);

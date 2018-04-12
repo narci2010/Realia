@@ -1,5 +1,7 @@
 
 #include "BinTree.h"
+#include <stack>
+using namespace std;
 
 CBinTree::CBinTree()
 {
@@ -54,7 +56,7 @@ CNode* CBinTree::CreateNode(UINT iType, POINT pt)
 		lpNode->m_rcNode.left = pt.x;
 		lpNode->m_rcNode.top = pt.y;
 		lpNode->m_rcNode.right = pt.x;
-		lpNode->m_rcNode.bottom = pt.y;
+		lpNode->m_rcNode.bottom = pt.y + 20;
 		m_pRootNode->m_pLeftChild = lpNode;
 
 		//创建右孩子
@@ -62,8 +64,9 @@ CNode* CBinTree::CreateNode(UINT iType, POINT pt)
 		rpNode->m_iNodeType = NT_STANDARD;
 		rpNode->m_rcNode.left = pt.x + 22;
 		rpNode->m_rcNode.top = pt.y;
-		rpNode->m_rcNode.left = pt.x + 22;
-		rpNode->m_rcNode.bottom = pt.y;
+		rpNode->m_rcNode.right = pt.x + 22;
+		rpNode->m_rcNode.bottom = pt.y + 20;
+		m_pRootNode->m_pRightChild = rpNode;
 	}
 
 	return m_pRootNode;
@@ -130,4 +133,48 @@ void CBinTree::DrawTree(HDC pDC)
 
 	if (m_pRootNode)
 		m_pRootNode->DrawNode(pDC);
+}
+
+void CBinTree::GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc)
+{
+	*lprc = { 0, 0, 0, 0 };
+	DWORD minDistance = 10000;
+	CNode* nearestNode = NULL;
+	if (m_pRootNode) {
+		CNode* pNode = m_pRootNode;
+		stack<CNode*> s;
+		while (pNode || !s.empty()) {
+			while (pNode != NULL) {
+				s.push(pNode);
+				pNode = pNode->m_pLeftChild;
+			}
+			if (!s.empty()) {
+				pNode = s.top();
+
+				if (pNode->m_iNodeType == NT_STANDARD) {
+					DWORD iDistance = DistanceBetweenPointAndRect(pNode->m_rcNode, pt);
+					if (iDistance == 0) {
+						nearestNode = pNode;
+						break;
+					}
+					else if (iDistance > 0) {
+						if (iDistance < minDistance) {
+							minDistance = iDistance;
+							nearestNode = pNode;
+						}
+					}
+				}
+
+				s.pop();
+				pNode = pNode->m_pRightChild;
+			}
+		}
+	}
+
+	if (minDistance == 10000)//不需要更新
+		*iUpdateStatus = -1;
+	else {
+		*iUpdateStatus = 1;
+		*lprc = nearestNode->m_rcNode;
+	}
 }

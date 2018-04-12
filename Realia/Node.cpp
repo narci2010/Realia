@@ -52,7 +52,7 @@ CNode::~CNode()
 void CNode::DrawNode(HDC pDC)
 {
 	HFONT hFont = CreateFont(
-		-8,                   // nHeight  
+		-20,                   // nHeight  
 		0,                         // nWidth  
 		0,                         // nEscapement  
 		0,                         // nOrientation  

@@ -2,6 +2,21 @@
 
 #include "Node.h"
 
+static inline DWORD DistanceBetweenPointAndRect(RECT rc, POINT pt)
+{
+	if (PtInRect(&rc, pt))
+		return 0;
+	else if (pt.y < rc.top || pt.y > rc.bottom)
+		return -1;
+	else {
+		DWORD mx = (rc.left + rc.right) / 2;
+		if (pt.x < mx)
+			return mx - pt.x;
+		else
+			return pt.x - mx;
+	}
+}
+
 class CBinTree
 {
 public:
@@ -42,4 +57,5 @@ public:
 	// draw the tree on a dc
 	void DrawTree(HDC pDC);
 
+	void GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc);
 };
