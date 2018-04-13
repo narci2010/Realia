@@ -58,6 +58,7 @@ CNode* CBinTree::CreateNode(UINT iType, POINT pt)
 		lpNode->m_rcNode.right = pt.x;
 		lpNode->m_rcNode.bottom = pt.y + 20;
 		m_pRootNode->m_pLeftChild = lpNode;
+		m_pRootNode->m_pLeftChild->m_pParent = m_pRootNode;
 
 		//创建右孩子
 		CNode* rpNode = new CNode;
@@ -67,6 +68,9 @@ CNode* CBinTree::CreateNode(UINT iType, POINT pt)
 		rpNode->m_rcNode.right = pt.x + 22;
 		rpNode->m_rcNode.bottom = pt.y + 20;
 		m_pRootNode->m_pRightChild = rpNode;
+		m_pRootNode->m_pRightChild->m_pParent = m_pRootNode;
+
+		m_pSelectNode = m_pRootNode->m_pLeftChild;
 	}
 
 	return m_pRootNode;
@@ -94,6 +98,21 @@ LPCTSTR CBinTree::GetName()
 void CBinTree::SetName(LPCTSTR strName)
 {
 	memcpy(m_strName, strName, lstrlen(strName));
+}
+
+// select a node with a given selectiontype 
+// NS_NODE (only the node)
+// NS_SUBTREE (complete subtree)
+void CBinTree::SelectNode(CNode* pNode, DWORD dwSelectType)
+{
+	m_pSelectNode = pNode;
+	m_dwSelectType = dwSelectType;
+}
+
+// return the currently selected node
+CNode* CBinTree::GetSelectedNode()
+{
+	return m_pSelectNode;
 }
 
 void CBinTree::preTraverse(CNode* T, HDC pDC)
@@ -132,10 +151,11 @@ void CBinTree::DrawTree(HDC pDC)
 	//pDC->SetBkMode(TRANSPARENT);
 
 	if (m_pRootNode)
-		m_pRootNode->DrawNode(pDC);
+		preTraverse(m_pRootNode, pDC);
+		//m_pRootNode->DrawNode(pDC);
 }
 
-void CBinTree::GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc)
+void CBinTree::GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc, LPCTSTR strText)
 {
 	*lprc = { 0, 0, 0, 0 };
 	DWORD minDistance = 10000;
@@ -176,5 +196,25 @@ void CBinTree::GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc)
 	else {
 		*iUpdateStatus = 1;
 		*lprc = nearestNode->m_rcNode;
+		m_pSelectNode = nearestNode;
+		strText = nearestNode->m_strText;
 	}
+}
+
+RECT CBinTree::UpdateSelectNode(LPCTSTR strText)
+{
+	::ZeroMemory(&m_pSelectNode->m_strText, sizeof(m_pSelectNode->m_strText));
+
+#   ifdef _UNICODE
+	wmemcpy(m_pSelectNode->m_strText, strText, lstrlen(strText));
+#   else
+	memcpy(m_pSelectNode->m_strText, strText, lstrlen(strText));
+#   endif
+
+	//需要根据字体大小重新计算节点宽度
+	m_pSelectNode->m_rcNode.right = m_pSelectNode->m_rcNode.left + lstrlen(strText) * 12;
+
+	//如果是左节点宽度改变，对应父节点和兄弟节点的位置都要更新
+
+	return m_pSelectNode->m_rcNode;
 }

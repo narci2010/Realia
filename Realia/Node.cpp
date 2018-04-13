@@ -45,6 +45,16 @@ CNode::~CNode()
 		delete m_pRightChild;
 }
 
+CNode* CNode::GetParentNode()
+{
+	return m_pParent;
+}
+
+void CNode::SetParentNode(CNode* pNode)
+{
+	m_pParent = pNode;
+}
+
 // draw the node pre-order 
 // first myself
 // second the left child 
@@ -66,7 +76,7 @@ void CNode::DrawNode(HDC pDC)
 		DEFAULT_QUALITY,           // nQuality  
 		DEFAULT_PITCH | FF_SWISS,  // nPitchAndFamily  
 		_T("Î¢ÈíÑÅºÚ"));           // lpszFacename 
-	SetTextColor(pDC, RGB(0, 0, 128));
+	SetTextColor(pDC, RGB(0, 0, 0));
 	SelectObject(pDC, hFont);
 	SetBkMode(pDC, TRANSPARENT);
 

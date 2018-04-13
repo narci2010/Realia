@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="284,100">
+	<Font shared="true" id="0" name="幼圆" size="12" default="true" />
+	<Font shared="true" id="1" name="微软雅黑" size="12" />
+	<VerticalLayout width="284" height="101" bkcolor="#FFC9CFD4" bordersize="1" bordercolor="#006B93B2">
+		<HorizontalLayout height="21" bkcolor="#FFFFFFFF" bkcolor2="#006B93B2">       
+            <Label name="" text="数字" tooltip="" width="30" bordersize="1" bkcolor="#FFB9D1EF" textcolor="#FFFFFFFF" disabledtextcolor="#FFA7A6AA"/>
+			<control />
+			<Button name="closebtn" text="" tooltip="" float="false" bordersize="0" width="41" height="21" bkcolor="#FFB9D1EF" bkcolor2="#FF757676" bordercolor="#FF000000" maxheight="20" maxwidth="41" normalimage="file='common.bmp' source='0,60,41,80'" hotimage="file='common.bmp' source='41,60,82,80'" pushedimage="file='common.bmp' source='82,60,123,80'"  />    
+        </HorizontalLayout>
+		<List header="hidden" inset="8,8,8,8" childpadding="4" itemhotbkcolor="FFC9CFD4">
+			<ListContainerElement height="30">
+				<HorizontalLayout childpadding="4">
+					<Button name="btnNum0" text="0" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum1" text="1" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum2" text="2" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum3" text="3" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum4" text="4" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum5" text="5" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum6" text="6" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum7" text="7" height="30" width="30" bkcolor="FFF0F0F0"/>
+				</HorizontalLayout>
+			</ListContainerElement>
+			<ListContainerElement height="30">
+				<HorizontalLayout childpadding="4">
+					<Button name="btnNum8" text="8" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnNum9" text="9" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnPoint" text="." height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnPlus" text="+" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnMinus" text="-" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnMultiply" text="*" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnDivide" text="/" height="30" width="30" bkcolor="FFF0F0F0"/>
+					<Button name="btnEquation" text="=" height="30" width="30" bkcolor="FFF0F0F0"/>
+				</HorizontalLayout>
+			</ListContainerElement>
+		</List>
+	</VerticalLayout>
+</Window>

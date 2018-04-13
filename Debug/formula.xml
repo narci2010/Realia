@@ -71,7 +71,7 @@
 				<!--RichEdit name="reFormula" float="true" pos="20,20,20,20" minwidth="30" minheight="30" bordercolor="#FF0000" bordersize="1" inset="4,2,4,2" multiline="true" rich="true"/-->
 			</VerticalLayout>
 		</HorizontalLayout>
-		<RichEdit name="editInput" float="true" pos="0,0,0,0" readonly="true"/>
+		<RichEdit name="editInput" float="true" pos="0,0,0,0" rich="false"/>
 		
 		<HorizontalLayout height="30" bkcolor="#FFFBEEDF"><!-- 三角函数区 -->
 			<control width="30"/>

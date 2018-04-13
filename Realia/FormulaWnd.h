@@ -24,6 +24,8 @@ public:
 	void OnFinalMessage(HWND hWnd);
 	virtual LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
+	virtual LRESULT OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 protected:
@@ -47,6 +49,7 @@ private:
 	// pointer to the binary tree data structure
 	CBinTree* m_pBinTree;
 
+	CComboUI* m_pComFontSize;
 	CRichEditUI* m_pEditInput;
 	CButtonUI* m_pBtnNew;
 	CButtonUI* m_pBtnColor;

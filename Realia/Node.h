@@ -79,6 +79,11 @@ public:
 	// the destination rectangle for the ouput
 	RECT m_rcNode;
 
+	// Sets the parent node directly
+	void SetParentNode(CNode* pNode);
+	// Returns the parent node
+	CNode* GetParentNode();
+
 	// drawing functions
 	virtual void DrawNode(HDC pDC);
 

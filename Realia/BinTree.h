@@ -47,6 +47,11 @@ public:
 	void SetName(LPCTSTR strName);
 	LPCTSTR GetName();
 
+	// Select the node pNode with nodeselectiontype dwSelectType
+	void SelectNode(CNode* pNode, DWORD dwSelectType);
+	// Get the selected node
+	CNode* GetSelectedNode();
+
 	//前序遍历二叉树
 	void preTraverse(CNode* T, HDC pDC);
 	//中序遍历二叉树
@@ -57,5 +62,9 @@ public:
 	// draw the tree on a dc
 	void DrawTree(HDC pDC);
 
-	void GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc);
+	//重新定位并更新文本框
+	void GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc, LPCTSTR strText);
+
+	//更新选中节点的文字内容和区域，并传回区域重定位文本框
+	RECT UpdateSelectNode(LPCTSTR strText);
 };

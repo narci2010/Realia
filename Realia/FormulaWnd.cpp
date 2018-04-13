@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "FormulaWnd.h"
 #include "RichEditUtil.h"
+#include "MenuWnd.h"
 
 const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
 const TCHAR* const pFormulaEditInputControlName = _T("editInput");
@@ -73,6 +74,7 @@ CDuiString CFormulaWnd::GetSkinFolder()
 
 void CFormulaWnd::InitWindow()
 {
+	m_pComFontSize= static_cast<CComboUI*>(m_PaintManager.FindControl(_T("comfontsize")));
 	m_pBtnNew = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNew")));
 	m_pBtnNum = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNum")));
 	m_pBtnSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSign")));
@@ -81,6 +83,14 @@ void CFormulaWnd::InitWindow()
 	m_pEditInput = static_cast<CRichEditUI*>(m_PaintManager.FindControl(pFormulaEditInputControlName));
 	if (m_pEditInput == NULL)
 		Close();
+
+	//ÏìÓ¦OnChange(EM_SETEVENTMASK ÉèÖÃ ENM_CHANGE)
+	long lMask = m_pEditInput->GetEventMask();
+	lMask |= ENM_CHANGE;
+	lMask &= ~ENM_PROTECTED;
+	m_pEditInput->SetEventMask(lMask);
+
+	m_pEditInput->SetFont(20);
 
 	GetClientRect(m_hWnd, &m_rcWindow);
 	m_lWndWidth = m_rcWindow.right - m_rcWindow.left;
@@ -126,21 +136,57 @@ LRESULT CFormulaWnd::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 	return 0;
 }
 
+LRESULT CFormulaWnd::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+
+
+	bHandled = FALSE;
+	return 0;
+}
+
 LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == WM_LBUTTONDOWN) {
+	if (uMsg == WM_COMMAND) {
+		switch (LOWORD(wParam))
+		{
+		case MENUWNDCMD_BTNPLUS:
+		{
+			//AttachThreadInput(GetCurrentThreadId(), ::GetWindowThreadProcessId(m_hWnd, NULL), TRUE);
+			POINT point;
+			GetCaretPos(&point);
+			m_pBinTree->CreateNode(NT_PLUS, point);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+			break;
+		case MENUWNDCMD_BTNEQUATION:
+		{
+			POINT point;
+			GetCaretPos(&point);
+			m_pBinTree->CreateNode(NT_EQUATION, point);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+			break;
+		default:
+			break;
+		}
+	}
+	else if (uMsg == WM_LBUTTONDOWN) {
 		POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		if (PtInRect(&m_rcFormula, pt)) {
 			RECT rc;
 			int iUpdateStatus;
-			m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc);
+			LPCTSTR strText = _T("");
+			m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc, strText);
 
 			if (iUpdateStatus == 1) {
 				m_rcEdit.left = rc.left;
 				m_rcEdit.top = rc.top;
-				m_rcEdit.right = m_rcEdit.left;
-				m_rcEdit.bottom = m_rcEdit.top + 20;
+				m_rcEdit.right = rc.right;
+				m_rcEdit.bottom = rc.bottom;
 				m_pEditInput->SetPos(m_rcEdit);
+				m_pEditInput->SetText(strText);
 				InvalidateRect(m_hWnd, &m_rcWindow, true);
 				UpdateWindow(m_hWnd);
 			}
@@ -185,19 +231,13 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 			UpdateWindow(m_hWnd);
 		}
 		else if (msg.pSender == m_pBtnNum) {
-			AttachThreadInput(GetCurrentThreadId(), ::GetWindowThreadProcessId(m_hWnd, NULL), TRUE);
-			POINT point;
-			GetCaretPos(&point);
-			m_pBinTree->CreateNode(NT_PLUS, point);
-			InvalidateRect(m_hWnd, &m_rcWindow, true);
-			UpdateWindow(m_hWnd);
+			CMenuWnd* pMenu = new CMenuWnd(m_hWnd, _T("MenuNum.xml"));
+			CDuiPoint point = msg.ptMouse;
+			ClientToScreen(m_hWnd, &point);
+			pMenu->Init(m_hWnd, point);
 		}
 		else if (msg.pSender == m_pBtnSign) {
-			POINT point;
-			GetCaretPos(&point);
-			m_pBinTree->CreateNode(NT_EQUATION, point);
-			InvalidateRect(m_hWnd, &m_rcWindow, true);
-			UpdateWindow(m_hWnd);
+
 		}
 		else if (msg.pSender == m_pBtnSpecialSign) {
 
@@ -205,10 +245,14 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 	}
 	else if (msg.sType == _T("textchanged")) {
 		if (msg.pSender == m_pEditInput) {
-			m_rcEdit.right += 20;
-			m_pEditInput->SetPos(m_rcEdit);
-			InvalidateRect(m_hWnd, &m_rcWindow, true);
-			UpdateWindow(m_hWnd);
+			if (m_pBinTree->m_pSelectNode) {
+				m_rcEdit = m_pBinTree->UpdateSelectNode(m_pEditInput->GetText().GetData());
+				m_pEditInput->SetPos(m_rcEdit);
+				InvalidateRect(m_hWnd, &m_rcWindow, true);
+				UpdateWindow(m_hWnd);
+			}
+			else
+				m_pEditInput->Undo();
 		}
 	}
 	return __super::Notify(msg);
