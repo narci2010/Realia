@@ -4,7 +4,7 @@
 	<Font shared="true" id="1" name="微软雅黑" size="12" />
 	<VerticalLayout width="284" height="101" bkcolor="#FFC9CFD4" bordersize="1" bordercolor="#006B93B2">
 		<HorizontalLayout height="21" inset="8,0,0,0" bkcolor="#FFFFFFFF" bkcolor2="#006B93B2">       
-            <Label name="" text="数字" tooltip="" width="30" textcolor="#FFFFFFFF"/>
+            <Label name="" text="符号" tooltip="" width="30" textcolor="#FFFFFFFF"/>
 			<control />
 			<Button name="closebtn" text="" tooltip="" float="false" bordersize="0" width="41" height="21" bkcolor="#FFB9D1EF" bkcolor2="#FF757676" bordercolor="#FF000000" maxheight="20" maxwidth="41" normalimage="file='common.bmp' source='0,60,41,80'" hotimage="file='common.bmp' source='41,60,82,80'" pushedimage="file='common.bmp' source='82,60,123,80'"  />    
         </HorizontalLayout>

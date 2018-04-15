@@ -28,6 +28,8 @@ public:
 
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+	void OnPaint(HDC pdc);
+
 protected:
 	void OnPrepare(TNotifyUI& msg);
 	void Notify(TNotifyUI& msg);
@@ -49,7 +51,7 @@ private:
 	// pointer to the binary tree data structure
 	CBinTree* m_pBinTree;
 
-	CComboUI* m_pComFontSize;
+	CComboUI* m_pCmbFontSize;
 	CRichEditUI* m_pEditInput;
 	CButtonUI* m_pBtnNew;
 	CButtonUI* m_pBtnColor;

@@ -71,8 +71,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>E:\work\code\DuiLib\duilib-master\DuiLib;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\work\code\DuiLib\duilib-master\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Work\gold sword\code\DuiLib\duilib-master\DuiLib;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\Work\gold sword\code\DuiLib\duilib-master\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -157,21 +157,25 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MenuWnd.cpp" />
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="NodeEntity.cpp" />
     <ClCompile Include="Realia.cpp" />
     <ClCompile Include="RealiaWnd.cpp" />
     <ClCompile Include="RichEditUtil.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BinTree.h" />
     <ClInclude Include="FormulaWnd.h" />
     <ClInclude Include="MenuWnd.h" />
     <ClInclude Include="Node.h" />
+    <ClInclude Include="NodeEntity.h" />
     <ClInclude Include="Realia.h" />
     <ClInclude Include="RealiaWnd.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RichEditUtil.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Realia.rc" />

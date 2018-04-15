@@ -2,21 +2,6 @@
 
 #include "Node.h"
 
-static inline DWORD DistanceBetweenPointAndRect(RECT rc, POINT pt)
-{
-	if (PtInRect(&rc, pt))
-		return 0;
-	else if (pt.y < rc.top || pt.y > rc.bottom)
-		return -1;
-	else {
-		DWORD mx = (rc.left + rc.right) / 2;
-		if (pt.x < mx)
-			return mx - pt.x;
-		else
-			return pt.x - mx;
-	}
-}
-
 class CBinTree
 {
 public:
@@ -53,18 +38,21 @@ public:
 	CNode* GetSelectedNode();
 
 	//前序遍历二叉树
-	void preTraverse(CNode* T, HDC pDC);
+	void preTraverse(CNode* T, Graphics* pGraphics);
 	//中序遍历二叉树
-	void midTraverse(CNode* T, HDC pDC);
+	void midTraverse(CNode* T, Graphics* pGraphics);
 	//后续遍历二叉树
-	void postTraverse(CNode* T, HDC pDC);
+	void postTraverse(CNode* T, Graphics* pGraphics);
 
 	// draw the tree on a dc
-	void DrawTree(HDC pDC);
+	void DrawTree(Graphics* pGraphics);
 
 	//重新定位并更新文本框
-	void GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc, LPCTSTR strText);
+	void GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc, LPTSTR strText);
 
 	//更新选中节点的文字内容和区域，并传回区域重定位文本框
 	RECT UpdateSelectNode(LPCTSTR strText);
+
+	//pNode1存在RectInc，后面的结点也要跟着调整
+	void UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2);
 };

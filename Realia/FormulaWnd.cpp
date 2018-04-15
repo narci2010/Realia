@@ -1,8 +1,9 @@
 
 #include "stdafx.h"
 #include "FormulaWnd.h"
-#include "RichEditUtil.h"
 #include "MenuWnd.h"
+#include "Util.h"
+#include "RichEditUtil.h"
 
 const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
 const TCHAR* const pFormulaEditInputControlName = _T("editInput");
@@ -74,7 +75,7 @@ CDuiString CFormulaWnd::GetSkinFolder()
 
 void CFormulaWnd::InitWindow()
 {
-	m_pComFontSize= static_cast<CComboUI*>(m_PaintManager.FindControl(_T("comfontsize")));
+	m_pCmbFontSize= static_cast<CComboUI*>(m_PaintManager.FindControl(_T("cmbfontsize")));
 	m_pBtnNew = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNew")));
 	m_pBtnNum = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNum")));
 	m_pBtnSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSign")));
@@ -90,6 +91,15 @@ void CFormulaWnd::InitWindow()
 	lMask &= ~ENM_PROTECTED;
 	m_pEditInput->SetEventMask(lMask);
 
+	//CHARFORMAT2 cf;
+	//ZeroMemory(&cf, sizeof(CHARFORMAT2));
+	//cf.cbSize = sizeof(cf);
+	//cf.dwMask = CFM_COLOR | CFM_SIZE | CFM_FACE;
+	//cf.crTextColor = RGB(0, 0, 0);//设置颜色
+	//cf.yHeight = -400;//设置高度
+	//lstrcpy(cf.szFaceName, _T("微软雅黑"));//设置字体
+	//m_pEditInput->SetDefaultCharFormat(cf);
+	//m_pEditInput->SetSelectionCharFormat(cf);
 	m_pEditInput->SetFont(20);
 
 	GetClientRect(m_hWnd, &m_rcWindow);
@@ -103,8 +113,8 @@ void CFormulaWnd::InitWindow()
 	m_rcFormula.bottom -= 80;
 	m_rcEdit.left += 50;
 	m_rcEdit.top += 74;
-	m_rcEdit.right = m_rcEdit.left;
-	m_rcEdit.bottom = m_rcEdit.top + 20;
+	m_rcEdit.right = m_rcEdit.left + 1;//此处不+1会导致宽度增大时光标显示异常
+	m_rcEdit.bottom = m_rcEdit.top + 30;//20号字体光标高度为27
 	m_pEditInput->SetPos(m_rcEdit);
 	m_pEditInput->SetFocus();
 }
@@ -177,7 +187,8 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (PtInRect(&m_rcFormula, pt)) {
 			RECT rc;
 			int iUpdateStatus;
-			LPCTSTR strText = _T("");
+			TCHAR strText[MAX_PATH];
+			::ZeroMemory(&strText, sizeof(strText));
 			m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc, strText);
 
 			if (iUpdateStatus == 1) {
@@ -199,11 +210,7 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			assert(SaveDC(hdc) != 0);
 
-			m_PaintManager.GetRoot()->Paint(hdc, m_rcWindow, NULL);
-			m_pEditInput->SetFocus();
-
-			//画公式
-			m_pBinTree->DrawTree(hdc);
+			OnPaint(hdc);
 
 			RestoreDC(hdc, -1);
 
@@ -237,10 +244,18 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 			pMenu->Init(m_hWnd, point);
 		}
 		else if (msg.pSender == m_pBtnSign) {
-
+			CMenuWnd* pMenu = new CMenuWnd(m_hWnd, _T("MenuSign.xml"));
+			CDuiPoint point = msg.ptMouse;
+			ClientToScreen(m_hWnd, &point);
+			pMenu->Init(m_hWnd, point);
 		}
 		else if (msg.pSender == m_pBtnSpecialSign) {
 
+		}
+	}
+	else if (msg.sType == _T("itemselect")) {
+		if (msg.pSender == m_pCmbFontSize) {
+			m_pEditInput->SetFont(CDuiStringToInt(m_pCmbFontSize->GetText()));
 		}
 	}
 	else if (msg.sType == _T("textchanged")) {
@@ -266,4 +281,43 @@ void CFormulaWnd::OnExit(TNotifyUI& msg)
 void CFormulaWnd::OnTimer(TNotifyUI& msg)
 {
 
+}
+
+void CFormulaWnd::OnPaint(HDC pdc)
+{
+	//创建与windowDC兼容的内存设备环境  
+	HDC hDcMem = CreateCompatibleDC(pdc);
+	//位图的初始化和载入位图     
+	HBITMAP hBmpMem = CreateCompatibleBitmap(pdc, m_lWndWidth, m_lWndHeight);
+	HBITMAP hBmpOld = (HBITMAP)SelectObject(hDcMem, hBmpMem);
+
+	//绘制背景
+	m_PaintManager.GetRoot()->Paint(hDcMem, m_rcWindow, NULL);
+	m_pEditInput->SetFocus();
+
+
+	//使用GDI+方式去锯齿
+	Graphics graphics(hDcMem);
+
+	//在内存中建立一块“虚拟画布”
+	Bitmap memBmp(m_lWndWidth, m_lWndHeight);
+	//获取这块内存画布的Graphics引用
+	Graphics memGr(&memBmp);
+	//设置线为高质量平滑模式
+	memGr.SetSmoothingMode(SmoothingModeHighQuality);
+
+	//画公式
+	m_pBinTree->DrawTree(&memGr);
+
+	//将内存画布画到窗口中
+	graphics.DrawImage(&memBmp, 0, 0, m_lWndWidth, m_lWndHeight);
+
+
+	//双缓冲技术
+	BitBlt(pdc, 0, 0, m_lWndWidth, m_lWndHeight, hDcMem, 0, 0, SRCCOPY);
+	SelectObject(hDcMem, hBmpOld);
+	//释放资源
+	DeleteDC(hDcMem);
+	DeleteObject(hBmpMem);
+	DeleteObject(hBmpOld);
 }

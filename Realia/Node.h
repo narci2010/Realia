@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
+#include "Util.h"
 
 
 // Node Types
@@ -46,6 +47,8 @@
 #define NT_LAMBDA		0x28	// Lambda
 #define NT_LABEL		0x29	// Label for vars and consts
 
+const TCHAR* const kFontFamily = _T("Î¢ÈíÑÅºÚ");
+
 class CNode
 {
 public:
@@ -59,11 +62,13 @@ public:
 	// pointer to right child
 	CNode* m_pRightChild;
 
-	// sublevel (subscript, sub-subscript ...)
-	int m_nSubLevel;
-	// the increments of the sublevel for the children
-	int m_nSubLevelLeftInc;
-	int m_nSubLevelRightInc;
+	// Node is allowed or not allowed to be edited
+	bool m_bEditMode;
+	// the increments of the rect for the node
+	int m_iRectLeftInc;
+	int m_iRectRightInc;
+	int m_iRectTopInc;
+	int m_iRectBottomInc;
 
 	// node type (one of the NT_* defines)
 	UINT m_iNodeType;
@@ -76,15 +81,64 @@ public:
 	// LOGFONT node (modified by the formatter class)
 	LOGFONT m_lf;
 
+	// FONT size
+	int m_iFontSize;
+
 	// the destination rectangle for the ouput
 	RECT m_rcNode;
+
+	// Returns the node type
+	UINT GetNodeType();
 
 	// Sets the parent node directly
 	void SetParentNode(CNode* pNode);
 	// Returns the parent node
 	CNode* GetParentNode();
 
+	// Sets the left child (and sets left child's new parent as this)
+	void SetLeftChild(CNode* pNode);
+	// Returns the left child
+	CNode* GetLeftChild();
+
+	// Sets the right child (and sets right child's new parent as this)
+	void SetRightChild(CNode* pNode);
+	// Returns the right child
+	CNode* GetRightChild();
+
+	// Sets the text of the node (used for rendering)
+	void SetText(LPCTSTR strText);
+	// Returns the text of the node
+	LPCTSTR GetText();
+
+	// Sets the edit mode of the node
+	void SetEditMode(bool bEditMode);
+	// Returns the edit mode of the node
+	bool GetEditMode();
+
+	// Sets the RGB colour of the node
+	void SetColor(COLORREF crColor);
+	// Returns the RGB colour of the node
+	COLORREF GetColor();
+
+	// Sets the facename in the LOGFONT structure
+	void SetFaceName(LPCTSTR strFaceName);
+	// Returns the facename of the LOGFONT structure as a CString
+	LPCTSTR GetFaceName();
+
+	// Returns a pointer to the LOGFONT structure m_lf
+	LOGFONT* GetLogFont();
+
+	void SetFontSize(int iFontSize);
+
+	// Returns TRUE if the node has no valid left and right child
+	virtual BOOL IsNodeLeaf();
+
+	RECT GetRect();
+
+	LPCTSTR GetOperatorTextByNodeType(UINT iNodeType);
+	void UpdateRect(POINT point);
+
 	// drawing functions
-	virtual void DrawNode(HDC pDC);
+	virtual void DrawNode(Graphics* pGraphics);
 
 };
