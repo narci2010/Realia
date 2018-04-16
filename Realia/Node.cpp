@@ -47,6 +47,16 @@ CNode::~CNode()
 		delete m_pRightChild;
 }
 
+//CNode& CNode::operator=(const CNode& other)
+//{
+//	if (this != &other) {
+//		delete m_pParent;
+//		m_pParent = other.m_pParent;
+//		lstrcpy(m_strText, other.m_strText);
+//	}
+//	return *this;
+//}
+
 UINT CNode::GetNodeType()
 {
 	return m_iNodeType;
@@ -124,6 +134,16 @@ COLORREF CNode::GetColor()
 	return  m_crColor;
 }
 
+void CNode::SetRectRightInc(int iRectRightInc)
+{
+	m_iRectRightInc = iRectRightInc;
+}
+
+void CNode::SetRectBottomInc(int iRectBottomInc)
+{
+	m_iRectBottomInc = iRectBottomInc;
+}
+
 void CNode::SetFaceName(LPCTSTR strFaceName)
 {
 	lstrcpy(m_lf.lfFaceName, strFaceName);
@@ -162,11 +182,20 @@ LPCTSTR CNode::GetOperatorTextByNodeType(UINT iNodeType)
 	TCHAR* strOperator;
 	switch (iNodeType)
 	{
-	case NT_EQUATION:
-		strOperator = _T("=");
-		break;
 	case NT_PLUS:
 		strOperator = _T("+");
+		break;
+	case NT_MINUS:
+		strOperator = _T("-");
+		break;
+	case NT_MULTIPLY:
+		strOperator = _T("*");
+		break;
+	case NT_DIVIDE:
+		strOperator = _T("/");
+		break;
+	case NT_EQUATION:
+		strOperator = _T("=");
 		break;
 	default:
 		strOperator = _T("");
@@ -177,22 +206,13 @@ LPCTSTR CNode::GetOperatorTextByNodeType(UINT iNodeType)
 
 void CNode::UpdateRect(POINT point)
 {
-	if (lstrlen(m_strText) != 0) {
-		SIZE size = GetTextExtent(m_strText, m_lf.lfFaceName, m_iFontSize);
-		m_rcNode.left = point.x;
-		m_rcNode.top = point.y;
-		m_rcNode.right = point.x + size.cx;
-		m_rcNode.bottom = point.y + size.cy;
-	}
-	else {
-		SIZE size = GetTextExtent(_T("123"), m_lf.lfFaceName, m_iFontSize);
-		m_rcNode.left = point.x;
-		m_rcNode.top = point.y;
-		m_rcNode.right = point.x;
-		m_rcNode.bottom = point.y;
-		m_iRectRightInc = 1;
-		m_iRectBottomInc = size.cy;
-	}
+	SIZE size = GetTextExtent(lstrlen(m_strText) != 0 ? m_strText : _T("123"), m_lf.lfFaceName, m_iFontSize);
+	m_rcNode.left = point.x;
+	m_rcNode.top = point.y;
+	m_rcNode.right = point.x;
+	m_rcNode.bottom = point.y;
+	m_iRectRightInc = lstrlen(m_strText) != 0 ? size.cx : 1;
+	m_iRectBottomInc = size.cy;
 }
 
 // draw the node pre-order 

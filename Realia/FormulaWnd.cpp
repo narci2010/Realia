@@ -5,7 +5,6 @@
 #include "Util.h"
 #include "RichEditUtil.h"
 
-const TCHAR* const pFormulaRichEditControlName = _T("reFormula");
 const TCHAR* const pFormulaEditInputControlName = _T("editInput");
 
 CFormulaWnd* CFormulaWnd::m_pInstance = NULL;
@@ -18,7 +17,7 @@ CFormulaWnd::CFormulaWnd()
 	::ZeroMemory(&m_rcFormula, sizeof(m_rcFormula));
 	::ZeroMemory(&m_rcEdit, sizeof(m_rcEdit));
 	m_bWindowInit = false;
-	m_pBinTree = new CBinTree;
+	m_pBinTree = NULL;
 }
 
 CFormulaWnd::~CFormulaWnd()
@@ -73,6 +72,13 @@ CDuiString CFormulaWnd::GetSkinFolder()
 //	return UILIB_ZIPRESOURCE;
 //}
 
+void CFormulaWnd::InitBinTree(CBinTree* pBinTree)
+{
+	m_pBinTree = pBinTree;
+	//创建头结点
+	m_pBinTree->CreateTree(NT_STANDARD, { m_rcEdit.left, m_rcEdit.top });
+}
+
 void CFormulaWnd::InitWindow()
 {
 	m_pCmbFontSize= static_cast<CComboUI*>(m_PaintManager.FindControl(_T("cmbfontsize")));
@@ -80,6 +86,8 @@ void CFormulaWnd::InitWindow()
 	m_pBtnNum = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNum")));
 	m_pBtnSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSign")));
 	m_pBtnSpecialSign = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnSpecialSign")));
+
+	m_pBtnFraction = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnFraction")));
 
 	m_pEditInput = static_cast<CRichEditUI*>(m_PaintManager.FindControl(pFormulaEditInputControlName));
 	if (m_pEditInput == NULL)
@@ -124,9 +132,6 @@ void CFormulaWnd::OnFinalMessage(HWND hWnd)
 	//启用父窗口
 	EnableWindow(m_hWndParent, true);
 
-	delete m_pBinTree;
-	m_pBinTree = NULL;
-
 	__super::OnFinalMessage(hWnd);
 
 	//此处有bug，pRoot指向的空间已释放，但是pRoot != NULL，所以单例模式总存在问题
@@ -146,25 +151,88 @@ LRESULT CFormulaWnd::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 	return 0;
 }
 
-LRESULT CFormulaWnd::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-{
-
-
-	bHandled = FALSE;
-	return 0;
-}
-
 LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	LRESULT lRes = 0;
+	BOOL bHandled = TRUE;
+
 	if (uMsg == WM_COMMAND) {
 		switch (LOWORD(wParam))
 		{
+		case MENUWNDCMD_BTNNUMBER0:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('0'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER1:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('1'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER2:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('2'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER3:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('3'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER4:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('4'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER5:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('5'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER6:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('6'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER7:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('7'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER8:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('8'), lParam);
+			break;
+		case MENUWNDCMD_BTNNUMBER9:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('9'), lParam);
+			break;
+		case MENUWNDCMD_BTNPOINT:
+			::SendMessage(m_hWnd, WM_CHAR, WPARAM('.'), lParam);
+			break;
 		case MENUWNDCMD_BTNPLUS:
 		{
 			//AttachThreadInput(GetCurrentThreadId(), ::GetWindowThreadProcessId(m_hWnd, NULL), TRUE);
 			POINT point;
 			GetCaretPos(&point);
-			m_pBinTree->CreateNode(NT_PLUS, point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_PLUS, charpos);
+			UpdateEditInputPos(point, true);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+			break;
+		case MENUWNDCMD_BTNMINUS:
+		{
+			POINT point;
+			GetCaretPos(&point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_MINUS, charpos);
+			UpdateEditInputPos(point, true);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+			break;
+		case MENUWNDCMD_BTNMULTIPLY:
+		{
+			POINT point;
+			GetCaretPos(&point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_MULTIPLY, charpos);
+			UpdateEditInputPos(point, true);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
+		}
+			break;
+		case MENUWNDCMD_BTNDIVIDE:
+		{
+			POINT point;
+			GetCaretPos(&point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_DIVIDE, charpos);
+			UpdateEditInputPos(point, true);
 			InvalidateRect(m_hWnd, &m_rcWindow, true);
 			UpdateWindow(m_hWnd);
 		}
@@ -173,7 +241,9 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			POINT point;
 			GetCaretPos(&point);
-			m_pBinTree->CreateNode(NT_EQUATION, point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_EQUATION, charpos);
+			UpdateEditInputPos(point, true);
 			InvalidateRect(m_hWnd, &m_rcWindow, true);
 			UpdateWindow(m_hWnd);
 		}
@@ -184,24 +254,15 @@ LRESULT CFormulaWnd::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uMsg == WM_LBUTTONDOWN) {
 		POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-		if (PtInRect(&m_rcFormula, pt)) {
-			RECT rc;
-			int iUpdateStatus;
-			TCHAR strText[MAX_PATH];
-			::ZeroMemory(&strText, sizeof(strText));
-			m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc, strText);
+		UpdateEditInputPos(pt);
 
-			if (iUpdateStatus == 1) {
-				m_rcEdit.left = rc.left;
-				m_rcEdit.top = rc.top;
-				m_rcEdit.right = rc.right;
-				m_rcEdit.bottom = rc.bottom;
-				m_pEditInput->SetPos(m_rcEdit);
-				m_pEditInput->SetText(strText);
-				InvalidateRect(m_hWnd, &m_rcWindow, true);
-				UpdateWindow(m_hWnd);
-			}
-		}
+		InvalidateRect(m_hWnd, &m_rcWindow, true);
+		UpdateWindow(m_hWnd);
+		//获取光标的位置（在第几个字符的后面）
+		//POINT point;
+		//GetCaretPos(&point);
+		//int charpos = m_pEditInput->CharFromPos(point);
+		//int a = 0;
 	}
 	else if (uMsg == WM_PAINT) {
 		if (m_bWindowInit) {
@@ -251,6 +312,15 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 		}
 		else if (msg.pSender == m_pBtnSpecialSign) {
 
+		}
+		else if (msg.pSender == m_pBtnFraction) {
+			POINT point;
+			GetCaretPos(&point);
+			int charpos = m_pEditInput->CharFromPos(point);
+			m_pBinTree->CreateNode(NT_FRACTION, charpos);
+			UpdateEditInputPos(point, true);
+			InvalidateRect(m_hWnd, &m_rcWindow, true);
+			UpdateWindow(m_hWnd);
 		}
 	}
 	else if (msg.sType == _T("itemselect")) {
@@ -320,4 +390,24 @@ void CFormulaWnd::OnPaint(HDC pdc)
 	DeleteDC(hDcMem);
 	DeleteObject(hBmpMem);
 	DeleteObject(hBmpOld);
+}
+
+void CFormulaWnd::UpdateEditInputPos(POINT pt, bool bMustUpdate)
+{
+	if (PtInRect(&m_rcFormula, pt)) {
+		RECT rc;
+		int iUpdateStatus;
+		TCHAR strText[MAX_PATH];
+		::ZeroMemory(&strText, sizeof(strText));
+		m_pBinTree->GetEditInputPos(pt, &iUpdateStatus, &rc, strText);
+
+		if (iUpdateStatus == 1 || bMustUpdate) {
+			m_rcEdit.left = rc.left;
+			m_rcEdit.top = rc.top;
+			m_rcEdit.right = rc.right;
+			m_rcEdit.bottom = rc.bottom;
+			m_pEditInput->SetPos(m_rcEdit);
+			m_pEditInput->SetText(strText);
+		}
+	}
 }

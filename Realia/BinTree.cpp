@@ -20,43 +20,93 @@ CBinTree::~CBinTree()
 }
 
 // create a tree with node of type strType as root
-CNode* CBinTree::CreateTree(UINT iType)
+CNode* CBinTree::CreateTree(UINT iType, POINT pt)
 {
-	m_pRootNode = new CNode;
-	m_pRootNode->m_iNodeType = iType;
-	if (iType == NT_EQUATION) {
-		lstrcpy(m_pRootNode->m_strText, _T("="));
-	}
-	else if (iType == NT_PLUS) {
-		lstrcpy(m_pRootNode->m_strText, _T("+"));
-	}
+	m_pRootNode = new CEditNode(NT_STANDARD, pt);
+	UpdateNodeRectByRectInc(m_pRootNode, m_pRootNode, 5);
+	m_pSelectNode = m_pRootNode;
 	return m_pRootNode;
 }
 
-CNode* CBinTree::CreateNode(UINT iType, POINT pt)
+CNode* CBinTree::CreateNode(UINT iType, int iCharPos)
 {
-	if (m_pRootNode == NULL) {
-		m_pRootNode = new COperatorNode(iType, { pt.x + 1, pt.y });
-		m_pRootNode->m_iNodeType = iType;
+	//拆分字符串
+	TCHAR strText[MAX_PATH], strLeftText[MAX_PATH], strRightText[MAX_PATH];
+	::ZeroMemory(&strText, sizeof(strText));
+	::ZeroMemory(&strLeftText, sizeof(strLeftText));
+	::ZeroMemory(&strRightText, sizeof(strRightText));
+	lstrcpy(strText, m_pSelectNode->GetText());
+	lstrcpyn(strLeftText, strText, iCharPos + 1);
+	lstrcpy(strRightText, strText + iCharPos);
 
-		//创建左孩子
-		CNode* lpNode = new CEditNode(NT_STANDARD, pt);
-		m_pRootNode->m_pLeftChild = lpNode;
-		m_pRootNode->m_pLeftChild->m_pParent = m_pRootNode;
+	RECT rc = m_pSelectNode->GetRect();
+	POINT pt = { rc.left, rc.top };
 
-		RECT rcRoot = m_pRootNode->GetRect();
-		//创建右孩子
-		CNode* rpNode = new CEditNode(NT_STANDARD, { rcRoot.right + 1, rcRoot.top });
-		m_pRootNode->m_pRightChild = rpNode;
-		m_pRootNode->m_pRightChild->m_pParent = m_pRootNode;
+	//调整选中节点的宽高，并更新右边的节点
+	m_pSelectNode->SetRectRightInc(rc.left - rc.right);
+	m_pSelectNode->SetRectBottomInc(rc.top - rc.bottom);
+	UpdateNodeRectByRectInc(m_pSelectNode, m_pRootNode, 5);
 
-		UpdateNodeRectByRectInc(lpNode, m_pRootNode);
-		UpdateNodeRectByRectInc(rpNode, m_pRootNode);
+	CNode* pNode = new COperatorNode(iType, pt);
+	//CNode* pNode = new CFractionalNode(iType, 20, pt);
 
-		m_pSelectNode = m_pRootNode->m_pLeftChild;
+	//替换节点
+	if (m_pSelectNode != m_pRootNode) {
+		CNode* pParent = m_pSelectNode->GetParentNode();
+
+		if (pParent->GetLeftChild() == m_pSelectNode)
+			pParent->SetLeftChild(pNode);
+		else if (pParent->GetRightChild() == m_pSelectNode)
+			pParent->SetRightChild(pNode);
+	}
+	else {
+		delete m_pRootNode;
+		m_pRootNode = pNode;
+	}
+	m_pSelectNode = pNode;
+
+	//创建左孩子
+	CNode* lpNode = new CEditNode(NT_STANDARD, strLeftText, pt);
+	pNode->m_pLeftChild = lpNode;
+	pNode->m_pLeftChild->m_pParent = pNode;
+
+	//创建右孩子
+	CNode* rpNode = new CEditNode(NT_STANDARD, strRightText, pt);
+	pNode->m_pRightChild = rpNode;
+	pNode->m_pRightChild->m_pParent = pNode;
+
+	UpdateNodeRectByRectInc(lpNode, m_pRootNode, 5);
+	UpdateNodeRectByRectInc(pNode, m_pRootNode, 5);
+	UpdateNodeRectByRectInc(rpNode, m_pRootNode, 5);
+
+	//节点和孩子节点隔开一个像素
+	lpNode->SetRectRightInc(1);
+	lpNode->SetRectBottomInc(0);
+	UpdateNodeRectByRectInc(lpNode, m_pRootNode, 1);
+	pNode->SetRectRightInc(1);
+	pNode->SetRectBottomInc(0);
+	UpdateNodeRectByRectInc(pNode, m_pRootNode, 1);
+
+	//m_pSelectNode = pNode->m_pLeftChild;
+	
+	return pNode;
+}
+
+void CBinTree::ReplaceNode(CNode* pDestNode, CNode* pSrcNode)
+{
+	if (pDestNode != m_pRootNode) {
+		CNode* pParent = pDestNode->GetParentNode();
+
+		if (pParent->GetLeftChild() == pDestNode)
+			pParent->SetLeftChild(pSrcNode);
+		else if (pParent->GetRightChild() == pDestNode)
+			pParent->SetRightChild(pSrcNode);
 	}
 
-	return m_pRootNode;
+	if (m_pSelectNode == pDestNode)
+		m_pSelectNode = pSrcNode;
+
+	delete pDestNode;
 }
 
 // return the root node of the tree
@@ -178,10 +228,13 @@ void CBinTree::GetEditInputPos(POINT pt, int* iUpdateStatus, LPRECT lprc, LPTSTR
 			s.pop();
 	}
 
-	if (minDistance == 10000)//不需要更新
+	if (minDistance == 10000 || m_pSelectNode == nearestNode)//不需要更新
 		*iUpdateStatus = -1;
 	else {
 		*iUpdateStatus = 1;
+	}
+
+	if (nearestNode) {
 		*lprc = nearestNode->m_rcNode;
 		m_pSelectNode = nearestNode;
 		lstrcpy(strText, nearestNode->m_strText);
@@ -195,7 +248,7 @@ RECT CBinTree::UpdateSelectNode(LPCTSTR strText)
 	//需要根据字体大小重新计算节点宽度
 	//如果是左节点宽度改变，对应父节点和兄弟节点的位置都要更新
 	m_pSelectNode->m_iRectRightInc = size.cx - sizeOld.cx;
-	UpdateNodeRectByRectInc(m_pSelectNode, m_pRootNode);
+	UpdateNodeRectByRectInc(m_pSelectNode, m_pRootNode, 5);
 
 	::ZeroMemory(&m_pSelectNode->m_strText, sizeof(m_pSelectNode->m_strText));
 
@@ -204,10 +257,10 @@ RECT CBinTree::UpdateSelectNode(LPCTSTR strText)
 	return m_pSelectNode->m_rcNode;
 }
 
-void CBinTree::UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2)
+void CBinTree::UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2, int iMode)
 {
 	if (pNode2) {
-		if (pNode2->m_rcNode.left > pNode1->m_rcNode.right && pNode2 != pNode1) {
+		if (pNode2->m_rcNode.left >= pNode1->m_rcNode.right && pNode2 != pNode1) {
 			pNode2->m_rcNode.left += pNode1->m_iRectRightInc;
 			pNode2->m_rcNode.right += pNode1->m_iRectRightInc;
 		}
@@ -215,8 +268,10 @@ void CBinTree::UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2)
 		UpdateNodeRectByRectInc(pNode1, pNode2->m_pRightChild);
 	}
 	if (pNode2 == m_pRootNode) {
-		pNode1->m_rcNode.right += pNode1->m_iRectRightInc;
-		pNode1->m_rcNode.bottom += pNode1->m_iRectBottomInc;
+		if (iMode & 4) {//调整源节点的宽度和高度
+			pNode1->m_rcNode.right += pNode1->m_iRectRightInc;
+			pNode1->m_rcNode.bottom += pNode1->m_iRectBottomInc;
+		}
 		pNode1->m_iRectRightInc = 0;
 		pNode1->m_iRectBottomInc = 0;
 	}

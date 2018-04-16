@@ -42,8 +42,10 @@ void CMenuWnd::Notify(TNotifyUI& msg)
 {
 	if (msg.sType == _T("click")) {
 		WPARAM wparam = GetMenuWndCmdByBtn(msg.pSender->GetName().GetData());
-		if (wparam != 0)
+		if (wparam != 0) {
 			::SendMessage(m_hParent, WM_COMMAND, wparam, msg.lParam);
+			Close();
+		}
 	}
 	return __super::Notify(msg);
 }

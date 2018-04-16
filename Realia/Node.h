@@ -6,17 +6,25 @@
 
 // Node Types
 #define NT_STANDARD		0x01	// standard-node
+#define NT_PLUS			0x02	// x + y
+#define NT_MINUS		0x03	// x - y
+#define NT_MULTIPLY		0x04	// x * y
+#define NT_DIVIDE		0x05	// x / y
+#define NT_EQUATION		0x06	// equations =
+
+#define NT_FRACTION		0x20	// x over y
+
 #define NT_DIVISION		0x02	// x over y
 #define NT_NTHROOT		0x03	// n-th root of anything
 #define NT_ROOT			0x04	// squareroot
 #define NT_POWERTO		0x05	// x powered by y
 #define NT_PLACEHOLDER	0x06    // placeholder for nodes
 #define NT_BRACE		0x07	// Brackes {x+y}
-#define NT_PLUS			0x08	// x + y
-#define NT_MINUS		0x09	// x - y
-#define NT_TIMES		0x0A	// x * y
+//#define NT_PLUS			0x08	// x + y
+//#define NT_MINUS		0x09	// x - y
+//#define NT_TIMES		0x0A	// x * y
 #define NT_NUMBER		0x0B	// 3,1 and so on
-#define NT_EQUATION		0x0C	// equations
+//#define NT_EQUATION		0x0C	// equations
 #define NT_PARTDERIVE	0x0D	// part. d/dt
 #define NT_DERIVE		0x0E	// d/dt fkt(t)
 #define NT_SUM			0x0F	// Sum from i=0;to i=10, over fkt(i)
@@ -54,6 +62,8 @@ class CNode
 public:
 	CNode();
 	virtual ~CNode();
+
+	//CNode& operator=(const CNode& other);
 
 	// pointer to parent
 	CNode* m_pParent;
@@ -119,6 +129,10 @@ public:
 	void SetColor(COLORREF crColor);
 	// Returns the RGB colour of the node
 	COLORREF GetColor();
+
+	//Sets the increment of the node
+	void SetRectRightInc(int iRectRightInc);
+	void SetRectBottomInc(int iRectBottomInc);
 
 	// Sets the facename in the LOGFONT structure
 	void SetFaceName(LPCTSTR strFaceName);

@@ -145,6 +145,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			pFormulaWnd->Create(hWnd, _T("公式编辑器"), WS_OVERLAPPEDWINDOW, 0, 0, 0, 800, 600);
 
+			CBinTree* pBinTree = new CBinTree;
+			m_CRealiaWnd.AddTreeToVector(pBinTree);
+			pFormulaWnd->InitBinTree(m_CRealiaWnd.GetLastTree());
+
 			pFormulaWnd->SetParentWnd(hWnd);
 
 			// 显示窗口
@@ -206,6 +210,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_ENABLE:
+		if (LOWORD(wParam) == 1) {//公式子窗体关闭发送的消息
+			InvalidateRect(hWnd, NULL, TRUE);
+			UpdateWindow(hWnd);
+		}
+		break;
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}

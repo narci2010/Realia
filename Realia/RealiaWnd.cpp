@@ -18,6 +18,12 @@ CRealiaWnd::~CRealiaWnd()
 	m_vecRealias.clear();
 
 	m_vecArcs.clear();
+
+	for (std::vector<CBinTree*>::iterator it = m_vecFormulas.begin(); it != m_vecFormulas.end(); it++) {
+		delete *it;
+		*it = NULL;
+	}
+	m_vecFormulas.clear();
 }
 
 void CRealiaWnd::InitWindow(HWND hWnd)
@@ -60,6 +66,10 @@ void CRealiaWnd::OnPaint(HDC pDc)
 	//画圆弧
 	for (int i = 0; i < m_vecArcs.size(); i++)
 		m_vecArcs.at(i).DrawArc(&memGr);
+
+	//画公式树
+	for (int i = 0; i < m_vecFormulas.size(); i++)
+		m_vecFormulas.at(i)->DrawTree(&memGr);
 
 	//将内存画布画到窗口中
 	graphics.DrawImage(&memBmp, 0, 0, m_lWndWidth, m_lWndHeight);
@@ -165,4 +175,19 @@ void CRealiaWnd::DrawBackground(HDC dc, RECT rc)
 	SelectObject(dc, oldhbrush);
 	::DeleteObject(hbrush);
 	::DeleteObject(oldhbrush);
+}
+
+CBinTree* CRealiaWnd::GetLastTree()
+{
+	int i = m_vecFormulas.size();
+	if (i == 0)
+		return NULL;
+	else
+		return m_vecFormulas.at(i - 1);
+}
+
+void CRealiaWnd::AddTreeToVector(CBinTree* pBinTree)
+{
+	if (pBinTree)
+		m_vecFormulas.push_back(pBinTree);
 }

@@ -20,15 +20,15 @@ public:
 	//virtual LPCTSTR GetResourceID() const;
 	//virtual UILIB_RESOURCETYPE GetResourceType() const;
 
+	void InitBinTree(CBinTree* pBinTree);
 	virtual void InitWindow();
 	void OnFinalMessage(HWND hWnd);
 	virtual LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
-	virtual LRESULT OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
-
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	void OnPaint(HDC pdc);
+	void UpdateEditInputPos(POINT pt, bool bMustUpdate = false);
 
 protected:
 	void OnPrepare(TNotifyUI& msg);
@@ -58,4 +58,6 @@ private:
 	CButtonUI* m_pBtnNum;
 	CButtonUI* m_pBtnSign;
 	CButtonUI* m_pBtnSpecialSign;
+
+	CButtonUI* m_pBtnFraction;
 };

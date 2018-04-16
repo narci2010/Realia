@@ -18,10 +18,12 @@ public:
 	TCHAR m_strName[MAX_PATH];
 
 	// creates a tree with a root node of type strType
-	CNode* CreateTree(UINT iType);
+	CNode* CreateTree(UINT iType, POINT pt);
 
 	//creates a node of type strType
-	CNode* CreateNode(UINT iType, POINT pt);
+	CNode* CreateNode(UINT iType, int iCharPos);
+
+	void ReplaceNode(CNode* pDestNode, CNode* pSrcNode);
 
 	// returns the root node
 	CNode* GetRootNode();
@@ -54,5 +56,5 @@ public:
 	RECT UpdateSelectNode(LPCTSTR strText);
 
 	//pNode1存在RectInc，后面的结点也要跟着调整
-	void UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2);
+	void UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2, int iMode = 0);
 };

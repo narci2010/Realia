@@ -13,6 +13,14 @@ CEditNode::CEditNode(UINT iNodeType, POINT point)
 	UpdateRect(point);
 }
 
+CEditNode::CEditNode(UINT iNodeType, LPCTSTR strText, POINT point)
+{
+	m_bEditMode = true;
+	m_iNodeType = iNodeType;
+	lstrcpy(m_strText, strText);
+	UpdateRect(point);
+}
+
 CEditNode::CEditNode(UINT iNodeType, int iFontSize, POINT point)
 {
 	m_bEditMode = true;

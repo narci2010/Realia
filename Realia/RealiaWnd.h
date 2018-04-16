@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Realia.h"
+#include "BinTree.h"
 #include <vector>
 
 class CRealiaWnd
@@ -17,6 +18,8 @@ public:
 	BOOL OnSetCursor(HWND pWnd, UINT nHitTest);
 	void SetRealiaType(int nType);
 	UINT DeleteRealia();//删除选中的图形，返回删除的个数
+	CBinTree* GetLastTree();//获取最后一个公式树
+	void AddTreeToVector(CBinTree* pBinTree);//将公式树加到容器里
 
 private:
 	HWND m_hWnd;
@@ -28,6 +31,7 @@ private:
 	int m_iRealiaType;//教具类型
 
 	std::vector<CRealia> m_vecRealias;//存放所画的全部教具
+	std::vector<CBinTree*> m_vecFormulas;//存放所画的全部公式树
 
 	void DrawBackground(HDC dc, RECT rc);//画背景
 };
