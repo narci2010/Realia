@@ -30,6 +30,27 @@ CNode* CBinTree::CreateTree(UINT iType, POINT pt)
 
 CNode* CBinTree::CreateNode(UINT iType, int iCharPos)
 {
+	switch (iType)
+	{
+	case NT_PLUS:
+	case NT_MINUS:
+	case NT_MULTIPLY:
+	case NT_DIVIDE:
+	case NT_EQUATION:
+		CreateOperatorNode(iType, iCharPos);
+		break;
+	case NT_FRACTION:
+		CreateFractionalNode(iType, iCharPos);
+		break;
+	default:
+		break;
+	}
+	
+	return NULL;
+}
+
+CNode* CBinTree::CreateOperatorNode(UINT iType, int iCharPos)
+{
 	//拆分字符串
 	TCHAR strText[MAX_PATH], strLeftText[MAX_PATH], strRightText[MAX_PATH];
 	::ZeroMemory(&strText, sizeof(strText));
@@ -48,7 +69,6 @@ CNode* CBinTree::CreateNode(UINT iType, int iCharPos)
 	UpdateNodeRectByRectInc(m_pSelectNode, m_pRootNode, 5);
 
 	CNode* pNode = new COperatorNode(iType, pt);
-	//CNode* pNode = new CFractionalNode(iType, 20, pt);
 
 	//替换节点
 	if (m_pSelectNode != m_pRootNode) {
@@ -88,7 +108,107 @@ CNode* CBinTree::CreateNode(UINT iType, int iCharPos)
 	UpdateNodeRectByRectInc(pNode, m_pRootNode, 1);
 
 	//m_pSelectNode = pNode->m_pLeftChild;
-	
+
+	return pNode;
+}
+
+CNode* CBinTree::CreateFractionalNode(UINT iType, int iCharPos)
+{
+	//拆分字符串
+	TCHAR strText[MAX_PATH], strLeftText[MAX_PATH], strRightText[MAX_PATH];
+	::ZeroMemory(&strText, sizeof(strText));
+	::ZeroMemory(&strLeftText, sizeof(strLeftText));
+	::ZeroMemory(&strRightText, sizeof(strRightText));
+	lstrcpy(strText, m_pSelectNode->GetText());
+	lstrcpyn(strLeftText, strText, iCharPos + 1);
+	lstrcpy(strRightText, strText + iCharPos);
+
+	RECT rc = m_pSelectNode->GetRect();
+	POINT pt = { rc.left, rc.top };
+
+	//调整选中节点的宽高，并更新右边的节点
+	m_pSelectNode->SetRectRightInc(rc.left - rc.right);
+	m_pSelectNode->SetRectBottomInc(rc.top - rc.bottom);
+	UpdateNodeRectByRectInc(m_pSelectNode, m_pRootNode, 5);
+
+	CNode* pNoneNode1 = new CNoneNode(pt);
+	CNode* pNoneNode2 = new CNoneNode(pt);
+
+	//替换节点
+	if (m_pSelectNode != m_pRootNode) {
+		CNode* pParent = m_pSelectNode->GetParentNode();
+
+		if (pParent->GetLeftChild() == m_pSelectNode)
+			pParent->SetLeftChild(pNoneNode1);
+		else if (pParent->GetRightChild() == m_pSelectNode)
+			pParent->SetRightChild(pNoneNode1);
+	}
+	else {
+		delete m_pRootNode;
+		m_pRootNode = pNoneNode1;
+	}
+	m_pSelectNode = pNoneNode1;
+
+	//创建左孩子
+	CNode* lpNode = new CEditNode(NT_STANDARD, strLeftText, pt);
+	pNoneNode2->m_pLeftChild = lpNode;
+	pNoneNode2->m_pLeftChild->m_pParent = pNoneNode2;
+
+	//创建右孩子
+	CNode* rpNode = new CEditNode(NT_STANDARD, strRightText, pt);
+	pNoneNode1->m_pRightChild = rpNode;
+	pNoneNode1->m_pRightChild->m_pParent = pNoneNode1;
+
+	pNoneNode1->m_pLeftChild = pNoneNode2;
+	pNoneNode2->m_pParent = pNoneNode1;
+
+	UpdateNodeRectByRectInc(lpNode, m_pRootNode, 5);
+	UpdateNodeRectByRectInc(rpNode, m_pRootNode, 5);
+
+	//节点和孩子节点隔开一个像素
+	lpNode->SetRectRightInc(3);
+	lpNode->SetRectBottomInc(0);
+	UpdateNodeRectByRectInc(lpNode, m_pRootNode, 1);
+	pt = { lpNode->m_rcNode.right + 1, lpNode->m_rcNode.top };
+	pNoneNode1->m_rcNode = { pt.x, pt.y, pt.x, pt.y };
+	pNoneNode2->m_rcNode = { pt.x, pt.y, pt.x, pt.y };
+
+	//创建分式结点并加到pNoneNode2的右孩子上
+	m_pSelectNode = pNoneNode2;
+	CNode* pNode = new CFractionalNode(20, pt);
+	pNoneNode2->m_pRightChild = pNode;
+	pNode->m_pParent = pNoneNode2;
+
+	//创建分子结点
+	lpNode = new CEditNode(NT_STANDARD, pt);
+	pNode->m_pLeftChild = lpNode;
+	pNode->m_pLeftChild->m_pParent = pNode;
+	lpNode->m_rcNode.right = lpNode->m_rcNode.left + lpNode->m_iRectRightInc;
+	lpNode->m_rcNode.bottom = lpNode->m_rcNode.top + lpNode->m_iRectBottomInc;
+	lpNode->SetRectRightInc(0);
+	lpNode->SetRectBottomInc(0);
+
+	//修正分式的矩形区域
+	pNode->m_rcNode.left = lpNode->m_rcNode.left;
+	pNode->m_rcNode.right = lpNode->m_rcNode.right;
+	pNode->m_rcNode.top = lpNode->m_rcNode.bottom + 1;
+	pNode->m_rcNode.bottom = pNode->m_rcNode.top + pNode->m_iFontSize / 10 + 1;
+	pt = { pNode->m_rcNode.left, pNode->m_rcNode.bottom + 1 };
+
+	//创建分母结点
+	rpNode = new CEditNode(NT_STANDARD, pt);
+	pNode->m_pRightChild = rpNode;
+	pNode->m_pRightChild->m_pParent = pNode;
+	rpNode->m_rcNode.right = rpNode->m_rcNode.left + rpNode->m_iRectRightInc;
+	rpNode->m_rcNode.bottom = rpNode->m_rcNode.top + rpNode->m_iRectBottomInc;
+	rpNode->SetRectRightInc(0);
+	rpNode->SetRectBottomInc(0);
+
+	int lHeight = rpNode->m_rcNode.bottom - lpNode->m_rcNode.top;
+	int lHeight2 = lpNode->m_rcNode.bottom - lpNode->m_rcNode.top;
+	pNode->SetRectBottomInc((lHeight - lHeight2) / 2);
+	UpdateNodeRectByRectInc(pNode, m_pRootNode, 2);
+
 	return pNode;
 }
 
@@ -264,8 +384,14 @@ void CBinTree::UpdateNodeRectByRectInc(CNode* pNode1, CNode* pNode2, int iMode)
 			pNode2->m_rcNode.left += pNode1->m_iRectRightInc;
 			pNode2->m_rcNode.right += pNode1->m_iRectRightInc;
 		}
-		UpdateNodeRectByRectInc(pNode1, pNode2->m_pLeftChild);
-		UpdateNodeRectByRectInc(pNode1, pNode2->m_pRightChild);
+		if (iMode & 2) {
+			if (pNode2->m_iNodeType != NT_FRACTION && (pNode2->m_pParent == NULL || pNode2->m_pParent->m_iNodeType != NT_FRACTION)) {
+				pNode2->m_rcNode.top += pNode1->m_iRectBottomInc;
+				pNode2->m_rcNode.bottom += pNode1->m_iRectBottomInc;
+			}
+		}
+		UpdateNodeRectByRectInc(pNode1, pNode2->m_pLeftChild, iMode);
+		UpdateNodeRectByRectInc(pNode1, pNode2->m_pRightChild, iMode);
 	}
 	if (pNode2 == m_pRootNode) {
 		if (iMode & 4) {//调整源节点的宽度和高度

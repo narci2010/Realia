@@ -5,6 +5,7 @@
 
 
 // Node Types
+#define NT_NONE			0x00	// none-node
 #define NT_STANDARD		0x01	// standard-node
 #define NT_PLUS			0x02	// x + y
 #define NT_MINUS		0x03	// x - y

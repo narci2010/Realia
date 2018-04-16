@@ -22,6 +22,8 @@ public:
 
 	//creates a node of type strType
 	CNode* CreateNode(UINT iType, int iCharPos);
+	CNode* CreateOperatorNode(UINT iType, int iCharPos);
+	CNode* CreateFractionalNode(UINT iType, int iCharPos);
 
 	void ReplaceNode(CNode* pDestNode, CNode* pSrcNode);
 

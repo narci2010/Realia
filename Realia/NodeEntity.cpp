@@ -1,6 +1,19 @@
 
 #include "NodeEntity.h"
 
+CNoneNode::CNoneNode()
+{
+	m_bEditMode = false;
+	m_iNodeType = NT_NONE;
+}
+
+CNoneNode::CNoneNode(POINT point)
+{
+	m_bEditMode = false;
+	m_iNodeType = NT_NONE;
+	m_rcNode = { point.x, point.y, point.x, point.y };
+}
+
 CEditNode::CEditNode()
 {
 	m_bEditMode = true;
@@ -57,12 +70,13 @@ COperatorNode::~COperatorNode()
 CFractionalNode::CFractionalNode()
 {
 	m_bEditMode = false;
+	m_iNodeType = NT_FRACTION;
 }
 
-CFractionalNode::CFractionalNode(UINT iNodeType, int iFontSize, POINT point)
+CFractionalNode::CFractionalNode(int iFontSize, POINT point)
 {
 	m_bEditMode = false;
-	m_iNodeType = iNodeType;
+	m_iNodeType = NT_FRACTION;
 	m_iFontSize = iFontSize;
 	UpdateRect(point);
 }
@@ -70,4 +84,10 @@ CFractionalNode::CFractionalNode(UINT iNodeType, int iFontSize, POINT point)
 CFractionalNode::~CFractionalNode()
 {
 
+}
+
+void CFractionalNode::DrawNode(Graphics* pGraphics)
+{
+	Pen pen(m_crColor, REAL(m_iFontSize / 10));
+	pGraphics->DrawLine(&pen, m_rcNode.left, m_rcNode.top, m_rcNode.right, m_rcNode.top);
 }

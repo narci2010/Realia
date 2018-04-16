@@ -2,6 +2,14 @@
 
 #include "Node.h"
 
+//空结点-矩形区域为空且不可编辑
+class CNoneNode : public CNode
+{
+public:
+	CNoneNode();
+	CNoneNode(POINT point);
+};
+
 //可编辑结点-普通输入结点
 class CEditNode : public CNode
 {
@@ -32,6 +40,8 @@ class CFractionalNode : public CNode
 {
 public:
 	CFractionalNode();
-	CFractionalNode(UINT iNodeType, int iFontSize, POINT point);
-	~CFractionalNode();
+	CFractionalNode(int iFontSize, POINT point);
+	virtual ~CFractionalNode();
+
+	virtual void DrawNode(Graphics* pGraphics);
 };
