@@ -166,6 +166,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDCLOSE:
 			DestroyWindow(hWnd);
 			break;
+		case FORMULAWND_OK:
+			InvalidateRect(hWnd, NULL, TRUE);
+			UpdateWindow(hWnd);
+			break;
+		case FORMULAWND_CANCEL:
+			m_CRealiaWnd.DelLastTree();
+			break;
 		default:
 			return DefWindowProc(hWnd, uMsg, wParam, lParam);
 		}
@@ -210,12 +217,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
-	case WM_ENABLE:
-		if (LOWORD(wParam) == 1) {//公式子窗体关闭发送的消息
-			InvalidateRect(hWnd, NULL, TRUE);
-			UpdateWindow(hWnd);
-		}
-		break;
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}

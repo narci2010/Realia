@@ -104,6 +104,18 @@ CNode* CNode::GetRightChild()
 	return m_pRightChild;
 }
 
+CNode* CNode::GetBrotherNode()
+{
+	if (m_pParent) {
+		if (m_pParent->m_pLeftChild == this)
+			return m_pParent->m_pRightChild;
+		else if (m_pParent->m_pRightChild == this)
+			return m_pParent->m_pLeftChild;
+	}
+	else
+		return NULL;
+}
+
 void CNode::SetText(LPCTSTR strText)
 {
 	lstrcpy(m_strText, strText);
@@ -175,6 +187,19 @@ BOOL CNode::IsNodeLeaf()
 RECT CNode::GetRect()
 {
 	return m_rcNode;
+}
+
+void CNode::SetRect(LPRECT lprc)
+{
+	m_rcNode.left = lprc->left;
+	m_rcNode.top = lprc->top;
+	m_rcNode.right = lprc->right;
+	m_rcNode.bottom = lprc->bottom;
+}
+
+DWORD CNode::GetWidth()
+{
+	return m_rcNode.right - m_rcNode.left;
 }
 
 LPCTSTR CNode::GetOperatorTextByNodeType(UINT iNodeType)

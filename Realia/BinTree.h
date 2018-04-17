@@ -25,6 +25,9 @@ public:
 	CNode* CreateOperatorNode(UINT iType, int iCharPos);
 	CNode* CreateFractionalNode(UINT iType, int iCharPos);
 
+	//Delete the selected node
+	void DelSelectNode();
+
 	void ReplaceNode(CNode* pDestNode, CNode* pSrcNode);
 
 	// returns the root node

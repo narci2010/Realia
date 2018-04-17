@@ -116,6 +116,9 @@ public:
 	// Returns the right child
 	CNode* GetRightChild();
 
+	// Returns the brother node
+	CNode* GetBrotherNode();
+
 	// Sets the text of the node (used for rendering)
 	void SetText(LPCTSTR strText);
 	// Returns the text of the node
@@ -149,6 +152,8 @@ public:
 	virtual BOOL IsNodeLeaf();
 
 	RECT GetRect();
+	void SetRect(LPRECT lprc);
+	DWORD GetWidth();
 
 	LPCTSTR GetOperatorTextByNodeType(UINT iNodeType);
 	void UpdateRect(POINT point);

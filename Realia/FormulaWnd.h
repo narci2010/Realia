@@ -25,6 +25,7 @@ public:
 	void OnFinalMessage(HWND hWnd);
 	virtual LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
+	virtual LRESULT OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	void OnPaint(HDC pdc);
@@ -46,10 +47,13 @@ private:
 	RECT m_rcFormula;
 	RECT m_rcEdit;//公式编辑区域
 
+	bool m_bFormulaOK;//是否确认公式
 	bool m_bWindowInit;
 
 	// pointer to the binary tree data structure
 	CBinTree* m_pBinTree;
+
+	CButtonUI* m_pBtnOK;
 
 	CComboUI* m_pCmbFontSize;
 	CRichEditUI* m_pEditInput;

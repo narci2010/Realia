@@ -42,6 +42,10 @@ using namespace DuiLib;
 #   endif
 #endif
 
+//公式窗口确认或取消
+#define FORMULAWND_OK			(WM_USER + 1)
+#define FORMULAWND_CANCEL		(WM_USER + 2)
+
 //写在子菜单窗口的控件ID
 #define MENUWNDCMD_BTNNUMBER0	(WM_USER + 100)
 #define MENUWNDCMD_BTNNUMBER1	(WM_USER + 101)

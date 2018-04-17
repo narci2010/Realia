@@ -89,7 +89,7 @@
 		
 		<HorizontalLayout height="30" bkcolor="#FFFBEEDF"><!-- 确定按钮区 -->
 			<control />
-			<Button name="btnHello" text="确定" width="50"/>
+			<Button name="btnOK" text="确定" width="50"/>
 		</HorizontalLayout>
 	</VerticalLayout>
 </Window>

@@ -20,6 +20,7 @@ public:
 	UINT DeleteRealia();//删除选中的图形，返回删除的个数
 	CBinTree* GetLastTree();//获取最后一个公式树
 	void AddTreeToVector(CBinTree* pBinTree);//将公式树加到容器里
+	void DelLastTree();//删除最后一个公式树
 
 private:
 	HWND m_hWnd;

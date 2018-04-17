@@ -191,3 +191,13 @@ void CRealiaWnd::AddTreeToVector(CBinTree* pBinTree)
 	if (pBinTree)
 		m_vecFormulas.push_back(pBinTree);
 }
+
+void CRealiaWnd::DelLastTree()
+{
+	int i = m_vecFormulas.size();
+	if (i == 0)
+		return;
+	CBinTree* pBinTree = m_vecFormulas.at(i - 1);
+	delete pBinTree;
+	m_vecFormulas.pop_back();
+}

@@ -16,6 +16,7 @@ CFormulaWnd::CFormulaWnd()
 	m_lWndHeight = 0;
 	::ZeroMemory(&m_rcFormula, sizeof(m_rcFormula));
 	::ZeroMemory(&m_rcEdit, sizeof(m_rcEdit));
+	m_bFormulaOK = false;
 	m_bWindowInit = false;
 	m_pBinTree = NULL;
 }
@@ -81,6 +82,7 @@ void CFormulaWnd::InitBinTree(CBinTree* pBinTree)
 
 void CFormulaWnd::InitWindow()
 {
+	m_pBtnOK = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnOK")));
 	m_pCmbFontSize= static_cast<CComboUI*>(m_PaintManager.FindControl(_T("cmbfontsize")));
 	m_pBtnNew = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNew")));
 	m_pBtnNum = static_cast<CButtonUI*>(m_PaintManager.FindControl(_T("btnNum")));
@@ -131,6 +133,10 @@ void CFormulaWnd::OnFinalMessage(HWND hWnd)
 {
 	//启用父窗口
 	EnableWindow(m_hWndParent, true);
+	if (m_bFormulaOK)
+		::SendMessage(m_hWndParent, WM_COMMAND, WPARAM(FORMULAWND_OK), 0);
+	else
+		::SendMessage(m_hWndParent, WM_COMMAND, WPARAM(FORMULAWND_CANCEL), 0);
 
 	__super::OnFinalMessage(hWnd);
 
@@ -148,6 +154,29 @@ void CFormulaWnd::OnFinalMessage(HWND hWnd)
 LRESULT CFormulaWnd::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	bHandled = FALSE;
+	return 0;
+}
+
+LRESULT CFormulaWnd::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	bHandled = FALSE;
+
+	//处理删除节点
+	POINT point;
+	GetCaretPos(&point);
+	int charpos = m_pEditInput->CharFromPos(point);
+	int charsum = m_pEditInput->GetTextLength();
+	if (LOWORD(wParam) == VK_BACK && charpos == 0) {//BS (backspace)
+		m_pBinTree->DelSelectNode();
+		UpdateEditInputPos(point, true);
+		InvalidateRect(m_hWnd, &m_rcWindow, true);
+		UpdateWindow(m_hWnd);
+		bHandled = TRUE;
+	}
+	else if (LOWORD(wParam) == VK_DELETE && charpos == charsum) {//DEL (delete)
+		bHandled = TRUE;
+	}
+
 	return 0;
 }
 
@@ -321,6 +350,10 @@ void CFormulaWnd::Notify(TNotifyUI& msg)
 			UpdateEditInputPos(point, true);
 			InvalidateRect(m_hWnd, &m_rcWindow, true);
 			UpdateWindow(m_hWnd);
+		}
+		else if (msg.pSender == m_pBtnOK) {
+			m_bFormulaOK = true;
+			Close();
 		}
 	}
 	else if (msg.sType == _T("itemselect")) {

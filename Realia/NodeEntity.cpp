@@ -5,12 +5,14 @@ CNoneNode::CNoneNode()
 {
 	m_bEditMode = false;
 	m_iNodeType = NT_NONE;
+	//lstrcpy(m_strText, _T("NoneNode"));
 }
 
 CNoneNode::CNoneNode(POINT point)
 {
 	m_bEditMode = false;
 	m_iNodeType = NT_NONE;
+	//lstrcpy(m_strText, _T("NoneNode"));
 	m_rcNode = { point.x, point.y, point.x, point.y };
 }
 
